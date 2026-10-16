@@ -67,7 +67,7 @@ class ExtensionGuard
         if (count($parts) > 2) {
             // Duyệt qua các phần mở rộng trung gian
             for ($i = 1; $i < count($parts) - 1; $i++) {
-                $subExt = strtolower($parts[$i]);
+                $subExt = strtolower(trim($parts[$i], " \t\n\r\0\x0B"));
                 if (in_array($subExt, self::DANGEROUS_EXTENSIONS, true)) {
                     throw SecurityException::forCode('ERR_SECURITY_DOUBLE_EXTENSION', ['filename' => $filename, 'dangerous_sub_ext' => $subExt]);
                 }

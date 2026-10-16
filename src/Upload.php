@@ -90,7 +90,7 @@ class Upload
      */
     public static function fromBase64(string $base64String, ?string $filename = null): UploadBuilder
     {
-        $pattern = '/^data:([a-zA-Z0-9_\-\.\/]+);base64,(.*)$/';
+        $pattern = '/^data:([a-zA-Z0-9_.\/-]+);base64,(.*)\z/s';
         $mime = 'application/octet-stream';
         $encodedData = $base64String;
 

@@ -22,9 +22,9 @@ class UploadedFile
         private readonly int $errorCode = UPLOAD_ERR_OK,
         private readonly ?string $fieldKey = null,
     ) {
-        $cleanOriginal = basename($this->originalName);
+        $cleanOriginal = trim(basename($this->originalName), " \t\n\r\0\x0B");
         $this->currentName = pathinfo($cleanOriginal, PATHINFO_FILENAME);
-        $this->currentExtension = strtolower(pathinfo($cleanOriginal, PATHINFO_EXTENSION));
+        $this->currentExtension = strtolower(trim(pathinfo($cleanOriginal, PATHINFO_EXTENSION), " \t\n\r\0\x0B"));
         $this->currentPath = $this->tmpPath;
     }
 
@@ -88,7 +88,7 @@ class UploadedFile
 
     public function setCurrentName(string $name): self
     {
-        $this->currentName = $name;
+        $this->currentName = trim($name, " \t\n\r\0\x0B");
         return $this;
     }
 
@@ -99,7 +99,7 @@ class UploadedFile
 
     public function setCurrentExtension(string $extension): self
     {
-        $this->currentExtension = strtolower(ltrim($extension, '.'));
+        $this->currentExtension = strtolower(trim(ltrim($extension, '.'), " \t\n\r\0\x0B"));
         return $this;
     }
 
