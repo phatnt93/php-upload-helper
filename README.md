@@ -348,22 +348,15 @@ Entry points from the `UploadHelper\Upload` facade:
 
 ```php
 // Standard Web Form Input
-Upload::file(mixed $input): UploadBuilder           // Single $_FILES element
-Upload::files(mixed $input): BatchUploadBuilder     // Multi-file $_FILES element
-Upload::fromGlobals(?array $files = null): BatchUploadBuilder // All $_FILES at once
+$builder = Upload::file($_FILES['avatar']);             // Single $_FILES element
+$batch   = Upload::files($_FILES['photos']);            // Multi-file $_FILES element
+$batch   = Upload::fromGlobals();                       // All $_FILES at once
 
 // Alternative Sources
-Upload::fromPath(string $localFilePath, ?string $filename = null): UploadBuilder
-Upload::fromBase64(string $base64String, ?string $filename = null): UploadBuilder
-Upload::fromUrl(
-    string $url,
-    ?string $filename = null,
-    int $timeout = 15,
-    int $maxDownloadBytes = 52_428_800,
-    bool $allowPrivateIp = false,
-    int $maxRedirects = 3          // every redirect hop is re-checked against SSRF rules
-): UploadBuilder
-Upload::fromPsr7(object|array $psr7Input): UploadBuilder
+$builder = Upload::fromPath('/path/to/local/file.jpg');
+$builder = Upload::fromBase64('data:image/png;base64,iVBORw0KGgo...', 'avatar.png');
+$builder = Upload::fromUrl('https://example.com/asset.png', timeout: 15, maxDownloadBytes: 52_428_800);
+$builder = Upload::fromPsr7($psr7UploadedFile);
 ```
 
 ---
@@ -418,7 +411,7 @@ All validation methods are available on `UploadBuilder` and `BatchUploadBuilder`
 
 #### 1. Resize Modes
 ```php
-$builder->resize(int $width, int $height, string $mode = 'fit', string $background = '#FFFFFF');
+$builder->resize(800, 600, mode: 'fit', background: '#FFFFFF');
 ```
 - **`fit` (Default):** Proportional scaling so the whole image fits inside `$width` × `$height`. Never distorts aspect ratio.
 - **`crop`:** Scales and centers the image to completely fill the `$width` × `$height` box, cropping excess parts.
@@ -428,8 +421,8 @@ $builder->resize(int $width, int $height, string $mode = 'fit', string $backgrou
 
 #### 2. Cropping, Rotating & Orientation
 ```php
-$builder->crop(int $width, int $height, int $x = 0, int $y = 0); // Freeform rectangle
-$builder->rotate(float $angle, string $background = '#000000');   // Custom angle rotation
+$builder->crop(400, 300, x: 10, y: 10);                           // Freeform rectangle
+$builder->rotate(90.0, background: '#000000');                    // Custom angle rotation
 $builder->flipHorizontal();                                      // Horizontal mirror
 $builder->flipVertical();                                        // Vertical mirror
 $builder->autoOrient();                                          // Read EXIF camera orientation
@@ -440,24 +433,24 @@ $builder->stripExif(keepOrientation: true);                     // Strip GPS and
 ```php
 // Image Overlay:
 $builder->watermarkImage(
-    string $watermarkPath,
-    string $position = 'bottom-right', // 'top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'
-    int $opacity = 100,               // 0 to 100%
-    int $offsetX = 10,
-    int $offsetY = 10
+    watermarkPath: '/path/to/watermark.png',
+    position: 'bottom-right', // 'top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'
+    opacity: 80,              // 0 to 100%
+    offsetX: 15,
+    offsetY: 15,
 );
 
 // TrueType Text Watermark:
 $builder->watermarkText(
-    string $text,
-    string $fontPath = '',            // Path to .ttf font file
-    int $size = 14,
-    string $color = '#FFFFFF',        // Hex color
-    string $position = 'bottom-right',
-    ?string $background = '#000000',  // Background padding block
-    int $backgroundOpacity = 50,
-    int $offsetX = 10,
-    int $offsetY = 10
+    text: '© 2026 MyBrand',
+    fontPath: '/path/to/font.ttf',   // Path to .ttf font file (uses built-in font if omitted)
+    size: 16,
+    color: '#FFFFFF',                // Hex color
+    position: 'bottom-right',
+    background: '#000000',           // Optional background padding block
+    backgroundOpacity: 50,
+    offsetX: 10,
+    offsetY: 10,
 );
 ```
 
@@ -477,11 +470,12 @@ $builder->watermarkText(
 ### Color Filters & Visual Effects
 
 ```php
-$builder->grayscale();          // Convert to black and white
-$builder->brightness(int $lvl); // Brightness: -127 to +127
-$builder->contrast(int $lvl);   // Contrast: -127 to +127
-$builder->blur();               // Gaussian blur
-$builder->sharpen();            // Unsharp mask filter
+$builder->grayscale();       // Convert to black and white
+$builder->brightness(20);    // Brightness: -255 to +255
+$builder->contrast(-10);     // Contrast: -100 to +100
+$builder->blur();            // Gaussian blur
+$builder->sharpen();         // Unsharp mask filter
+$builder->invert();          // Invert image colors
 ```
 
 ---

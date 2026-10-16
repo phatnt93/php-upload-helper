@@ -347,22 +347,15 @@ Các điểm khởi tạo tĩnh từ Facade `UploadHelper\Upload`:
 
 ```php
 // Dữ liệu từ HTML Form
-Upload::file(mixed $input): UploadBuilder           // Xử lý 1 phần tử $_FILES
-Upload::files(mixed $input): BatchUploadBuilder     // Xử lý mảng nhiều phần tử $_FILES
-Upload::fromGlobals(?array $files = null): BatchUploadBuilder // Đọc toàn bộ siêu biến $_FILES
+$builder = Upload::file($_FILES['avatar']);             // Xử lý 1 phần tử $_FILES
+$batch   = Upload::files($_FILES['photos']);            // Xử lý mảng nhiều phần tử $_FILES
+$batch   = Upload::fromGlobals();                       // Đọc toàn bộ siêu biến $_FILES
 
 // Các nguồn dữ liệu thay thế
-Upload::fromPath(string $localFilePath, ?string $filename = null): UploadBuilder
-Upload::fromBase64(string $base64String, ?string $filename = null): UploadBuilder
-Upload::fromUrl(
-    string $url,
-    ?string $filename = null,
-    int $timeout = 15,
-    int $maxDownloadBytes = 52_428_800,
-    bool $allowPrivateIp = false,
-    int $maxRedirects = 3          // mỗi lần chuyển hướng đều được kiểm tra lại chống SSRF
-): UploadBuilder
-Upload::fromPsr7(object|array $psr7Input): UploadBuilder
+$builder = Upload::fromPath('/path/to/local/file.jpg');
+$builder = Upload::fromBase64('data:image/png;base64,iVBORw0KGgo...', 'avatar.png');
+$builder = Upload::fromUrl('https://example.com/asset.png', timeout: 15, maxDownloadBytes: 52_428_800);
+$builder = Upload::fromPsr7($psr7UploadedFile);
 ```
 
 ---
@@ -417,7 +410,7 @@ Các phương thức xác thực khả dụng trên cả `UploadBuilder` và `Ba
 
 #### 1. Các chế độ thay đổi kích thước (Resize Modes)
 ```php
-$builder->resize(int $width, int $height, string $mode = 'fit', string $background = '#FFFFFF');
+$builder->resize(800, 600, mode: 'fit', background: '#FFFFFF');
 ```
 - **`fit` (Mặc định):** Thu phóng tỷ lệ sao cho bức ảnh nằm vừa trọn bên trong khung `$width` × `$height`. Không bao giờ làm méo tỷ lệ ảnh.
 - **`crop`:** Thu phóng và cắt từ tâm ảnh để phủ kín hoàn toàn khung `$width` × `$height`, loại bỏ phần rìa thừa.
@@ -427,8 +420,8 @@ $builder->resize(int $width, int $height, string $mode = 'fit', string $backgrou
 
 #### 2. Cắt cúp, Xoay & Hướng chụp
 ```php
-$builder->crop(int $width, int $height, int $x = 0, int $y = 0); // Cắt cúp tự do
-$builder->rotate(float $angle, string $background = '#000000');   // Xoay ảnh theo góc độ
+$builder->crop(400, 300, x: 10, y: 10);                           // Cắt cúp tự do
+$builder->rotate(90.0, background: '#000000');                    // Xoay ảnh theo góc độ
 $builder->flipHorizontal();                                      // Lật ảnh theo gương ngang
 $builder->flipVertical();                                        // Lật ảnh theo gương dọc
 $builder->autoOrient();                                          // Tự động xoay theo EXIF điện thoại
@@ -439,24 +432,24 @@ $builder->stripExif(keepOrientation: true);                     // Khử GPS và
 ```php
 // Đóng dấu bằng ảnh logo mờ:
 $builder->watermarkImage(
-    string $watermarkPath,
-    string $position = 'bottom-right', // 'top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'
-    int $opacity = 100,               // 0 đến 100%
-    int $offsetX = 10,
-    int $offsetY = 10
+    watermarkPath: '/path/to/watermark.png',
+    position: 'bottom-right', // 'top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'
+    opacity: 80,              // 0 đến 100%
+    offsetX: 15,
+    offsetY: 15,
 );
 
 // Đóng dấu bằng chữ TrueType:
 $builder->watermarkText(
-    string $text,
-    string $fontPath = '',            // Đường dẫn đến file font .ttf
-    int $size = 14,
-    string $color = '#FFFFFF',        // Màu chữ mã hex
-    string $position = 'bottom-right',
-    ?string $background = '#000000',  // Khối viền nền đệm cho chữ
-    int $backgroundOpacity = 50,
-    int $offsetX = 10,
-    int $offsetY = 10
+    text: '© 2026 MyBrand',
+    fontPath: '/path/to/font.ttf',   // Đường dẫn đến file font .ttf (để trống nếu dùng font mặc định)
+    size: 16,
+    color: '#FFFFFF',                // Màu chữ mã hex
+    position: 'bottom-right',
+    background: '#000000',           // Khối viền nền đệm cho chữ
+    backgroundOpacity: 50,
+    offsetX: 10,
+    offsetY: 10,
 );
 ```
 
@@ -476,11 +469,12 @@ $builder->watermarkText(
 ### Bộ Lọc Màu & Hiệu Ứng Thị Giác
 
 ```php
-$builder->grayscale();          // Chuyển ảnh sang trắng đen
-$builder->brightness(int $lvl); // Độ sáng: -127 đến +127
-$builder->contrast(int $lvl);   // Độ tương phản: -127 đến +127
-$builder->blur();               // Làm mờ ảnh (Gaussian blur)
-$builder->sharpen();            // Tăng độ sắc nét của ảnh
+$builder->grayscale();       // Chuyển ảnh sang trắng đen
+$builder->brightness(20);    // Độ sáng: -255 đến +255
+$builder->contrast(-10);     // Độ tương phản: -100 đến +100
+$builder->blur();            // Làm mờ ảnh (Gaussian blur)
+$builder->sharpen();         // Tăng độ sắc nét của ảnh
+$builder->invert();          // Đảo màu âm bản của ảnh
 ```
 
 ---
