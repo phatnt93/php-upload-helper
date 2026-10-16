@@ -321,4 +321,64 @@ class VariantsAndHooksTest extends TestCase
         $this->assertTrue($batch->allSuccessful());
         $this->assertSame([0, 1], $seenIndices);
     }
+
+    public function testBatchInvertMatchesSingleInvertPixelValues(): void
+    {
+        // Create an uncompressed PNG with solid RGB(100, 150, 200)
+        $imgPath = $this->createTempFile('', 'png');
+        $im = imagecreatetruecolor(20, 20);
+        $this->assertNotFalse($im);
+        $color = imagecolorallocate($im, 100, 150, 200);
+        $this->assertNotFalse($color);
+        imagefill($im, 0, 0, $color);
+        imagepng($im, $imgPath);
+        imagedestroy($im);
+
+        $singleDir = $this->createTempDir();
+        $batchDir = $this->createTempDir();
+
+        $singleUp = new UploadedFile('test.png', 'image/png', (int) filesize($imgPath), $imgPath);
+        $batchUp = new UploadedFile('test.png', 'image/png', (int) filesize($imgPath), $imgPath);
+
+        // 1. Single builder invert
+        $singleRes = Upload::file($singleUp)->invert()->saveTo($singleDir);
+        $this->assertTrue($singleRes->isSuccess());
+        $singlePath = (string) $singleRes->getFilePath();
+        $this->assertFileExists($singlePath);
+
+        // 2. Batch builder invert
+        $batchRes = Upload::files([$batchUp])->invert()->destination($batchDir)->process();
+        $this->assertTrue($batchRes->allSuccessful());
+        $batchFile = $batchRes->getSuccessful()[0] ?? null;
+        $this->assertNotNull($batchFile);
+        $batchPath = $batchFile->getSavedPath();
+        $this->assertFileExists($batchPath);
+
+        // 3. Inspect pixel values
+        $imSingle = imagecreatefrompng($singlePath);
+        $this->assertNotFalse($imSingle);
+        $rgbSingle = imagecolorat($imSingle, 5, 5);
+        $rSingle = ($rgbSingle >> 16) & 0xFF;
+        $gSingle = ($rgbSingle >> 8) & 0xFF;
+        $bSingle = $rgbSingle & 0xFF;
+        imagedestroy($imSingle);
+
+        $imBatch = imagecreatefrompng($batchPath);
+        $this->assertNotFalse($imBatch);
+        $rgbBatch = imagecolorat($imBatch, 5, 5);
+        $rBatch = ($rgbBatch >> 16) & 0xFF;
+        $gBatch = ($rgbBatch >> 8) & 0xFF;
+        $bBatch = $rgbBatch & 0xFF;
+        imagedestroy($imBatch);
+
+        // Inverted: 255 - 100 = 155, 255 - 150 = 105, 255 - 200 = 55
+        $this->assertSame(155, $rSingle);
+        $this->assertSame(105, $gSingle);
+        $this->assertSame(55, $bSingle);
+
+        // Batch must match single exactly
+        $this->assertSame($rSingle, $rBatch);
+        $this->assertSame($gSingle, $gBatch);
+        $this->assertSame($bSingle, $bBatch);
+    }
 }

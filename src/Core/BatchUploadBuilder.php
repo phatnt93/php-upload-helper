@@ -533,6 +533,8 @@ class BatchUploadBuilder
                     case 'filter':
                         if ($action['args']['filter'] === 'grayscale') {
                             $builder->grayscale();
+                        } elseif ($action['args']['filter'] === 'negative') {
+                            $builder->invert();
                         }
                         break;
                 }

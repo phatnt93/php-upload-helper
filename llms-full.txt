@@ -127,23 +127,24 @@ class Upload
   Plugs in custom storage implementation (defaults to `LocalStorage`).
 
 ### 3.4 Image Manipulation
-- `resize(int $width, int $height, string $mode = 'fit', bool $allowEnlarge = false, string $background = '#FFFFFF'): self`  
+- `resize(int $width, int $height, string $mode = 'fit', string $background = '#FFFFFF'): self`  
   Modes:
   - `'fit'` / `'contain'`: Scales proportionally to fit within bounding box without cropping.
   - `'crop'` / `'cover'`: Scales and center-crops so image completely covers target dimensions.
   - `'pad'` / `'fill'`: Scales proportionally and pads borders with background color.
   - `'stretch'`: Forces exact dimensions without preserving aspect ratio.
-- `crop(int $width, int $height, ?int $x = null, ?int $y = null, string $position = 'center'): self`  
-  Positions: `'center'`, `'top-left'`, `'top'`, `'top-right'`, `'bottom-left'`, `'bottom'`, `'bottom-right'`.
-- `rotate(float $angle, int $bgColor = 0): self`  
-  Rotates image by specified degrees (counter-clockwise).
-- `flip(string $mode = 'both'): self`  
-  Modes: `'horizontal'`, `'vertical'`, `'both'`.
+- `withoutEnlarging(bool $without = true): self`  
+  Controls whether smaller images are prevented from being upscaled during resize.
+- `crop(int $width, int $height, int $x = 0, int $y = 0): self`
+- `rotate(float $angle, string $background = '#000000'): self`  
+  Rotates image by specified degrees (counter-clockwise) with hex background color for empty areas.
+- `flip(string $direction = 'horizontal'): self` (`flipHorizontal(): self`, `flipVertical(): self`)  
+  Directions: `'horizontal'` (`'h'`), `'vertical'` (`'v'`), `'both'`.
 - `watermarkImage(string $watermarkPath, string $position = 'bottom-right', int $opacity = 100, int $offsetX = 10, int $offsetY = 10): self`  
   Overlays PNG/JPEG watermark with configurable position, opacity (0-100), and offsets.
-- `watermarkText(string $text, int $fontSize = 12, int $color = 0xFFFFFF, string $position = 'bottom-right', ?string $fontPath = null, int $offsetX = 10, int $offsetY = 10): self`  
-  Overlays text watermark using TTF font or built-in GD font.
-- `stripExif(): self`  
+- `watermarkText(string $text, string $fontPath = '', int $size = 14, string $color = '#FFFFFF', string $position = 'bottom-right', ?string $background = null, int $backgroundOpacity = 0, int $offsetX = 10, int $offsetY = 10): self`  
+  Overlays text watermark using TTF font (or built-in font if empty fontPath), hex color, and optional background box.
+- `stripExif(bool $keepOrientation = true): self`, `stripGps(bool $keepOrientation = true): self`  
   Strips all EXIF, GPS, IPTC, and XMP metadata by re-encoding through image driver.
 - `autoOrient(): self`  
   Automatically rotates image according to EXIF orientation tag before processing.
@@ -156,7 +157,7 @@ class Upload
 - `grayscale(): self`
 - `brightness(int $level): self` (range -255 to 255)
 - `contrast(int $level): self` (range -100 to 100)
-- `blur(int $passes = 1): self`
+- `blur(): self`
 - `sharpen(): self`
 - `invert(): self`
 
@@ -345,14 +346,14 @@ interface ImageDriverInterface
 {
     public function isAvailable(): bool;
     public function load(string $filePath): ImageResourceInterface;
-    public function create(int $width, int $height, int|string $bgColor = 0): ImageResourceInterface;
-    public function save(ImageResourceInterface $resource, string $outputPath, string $format = 'jpeg', int $quality = 85): bool;
-    public function resize(ImageResourceInterface $resource, int $targetWidth, int $targetHeight, string $mode = 'contain', bool $allowEnlarge = false): ImageResourceInterface;
-    public function crop(ImageResourceInterface $resource, int $width, int $height, ?int $x = null, ?int $y = null, string $position = 'center'): ImageResourceInterface;
-    public function rotate(ImageResourceInterface $resource, float $angle, int|string $bgColor = 0): ImageResourceInterface;
-    public function flip(ImageResourceInterface $resource, string $mode = 'both'): ImageResourceInterface;
-    public function watermarkImage(ImageResourceInterface $resource, ImageResourceInterface $watermark, string $position = 'bottom-right', int $opacity = 100, int $offsetX = 10, int $offsetY = 10): ImageResourceInterface;
-    public function watermarkText(ImageResourceInterface $resource, string $text, int $fontSize = 12, int|string $color = 0xFFFFFF, string $position = 'bottom-right', ?string $fontPath = null, int $offsetX = 10, int $offsetY = 10): ImageResourceInterface;
-    public function filter(ImageResourceInterface $resource, string $filterType, array $args = []): ImageResourceInterface;
+    public function resize(ImageResourceInterface $image, int $targetWidth, int $targetHeight, string $mode = 'fit', bool $allowEnlarge = false, string $background = '#FFFFFF'): ImageResourceInterface;
+    public function crop(ImageResourceInterface $image, int $width, int $height, int $x = 0, int $y = 0): ImageResourceInterface;
+    public function rotate(ImageResourceInterface $image, float $angle, string $background = '#000000'): ImageResourceInterface;
+    public function flip(ImageResourceInterface $image, string $direction): ImageResourceInterface;
+    public function watermarkImage(ImageResourceInterface $image, string $watermarkPath, string $position = 'bottom-right', int $opacity = 100, int $offsetX = 10, int $offsetY = 10): ImageResourceInterface;
+    public function watermarkText(ImageResourceInterface $image, string $text, string $fontPath, int $size, string $color, string $position = 'bottom-right', ?string $background = null, int $backgroundOpacity = 0, int $offsetX = 10, int $offsetY = 10): ImageResourceInterface;
+    public function filter(ImageResourceInterface $image, string $filterType, array $args = []): ImageResourceInterface;
+    public function autoOrient(ImageResourceInterface $image, string $sourcePath): ImageResourceInterface;
+    public function save(ImageResourceInterface $image, string $destinationPath, string $format, int $quality = 85): bool;
 }
 ```
