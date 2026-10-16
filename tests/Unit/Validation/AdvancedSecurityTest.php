@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace UploadHelper\Tests\Unit\Validation;
 
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use UploadHelper\Actions\File\RenameAction;
 use UploadHelper\Actions\Image\StripExifAction;
 use UploadHelper\Core\ActionContext;
@@ -25,6 +26,7 @@ class AdvancedSecurityTest extends TestCase
     // Phase P0: Pixel Flood & SSRF Tests
     // =========================================================================
 
+    #[RequiresPhpExtension('gd')]
     public function testPixelFloodPassesForNormalImage(): void
     {
         $file = $this->createTestImage(200, 200, 'jpeg');
@@ -32,6 +34,7 @@ class AdvancedSecurityTest extends TestCase
         $this->assertTrue(true);
     }
 
+    #[RequiresPhpExtension('gd')]
     public function testPixelFloodThrowsWhenPixelsExceedLimit(): void
     {
         $file = $this->createTestImage(500, 500, 'jpeg'); // 250,000 pixels
@@ -41,6 +44,7 @@ class AdvancedSecurityTest extends TestCase
         PixelFloodGuard::assertSafe($file, maxPixels: 100_000);
     }
 
+    #[RequiresPhpExtension('gd')]
     public function testPixelFloodThrowsWhenMemoryExceedsLimit(): void
     {
         $file = $this->createTestImage(400, 400, 'jpeg'); // 160,000 px * 4 = 640 KB
@@ -117,6 +121,7 @@ class AdvancedSecurityTest extends TestCase
         $this->assertStringContainsString('Directory listing is forbidden', (string) file_get_contents($index));
     }
 
+    #[RequiresPhpExtension('gd')]
     public function testStripExifActionScrubsImage(): void
     {
         $file = $this->createTestImage(100, 100, 'jpeg');

@@ -15,9 +15,8 @@ class CropAction implements ActionInterface
         private readonly int $width,
         private readonly int $height,
         private readonly int $x = 0,
-        private readonly int $y = 0
-    ) {
-    }
+        private readonly int $y = 0,
+    ) {}
 
     public function getName(): string
     {

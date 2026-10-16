@@ -58,7 +58,7 @@ abstract class TestCase extends BaseTestCase
         int $width = 100,
         int $height = 100,
         string $format = 'jpg',
-        string $bgColor = '#336699'
+        string $bgColor = '#336699',
     ): string {
         $image = imagecreatetruecolor($width, $height);
         if ($image === false) {

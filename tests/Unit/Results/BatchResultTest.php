@@ -21,7 +21,7 @@ class BatchResultTest extends TestCase
             mime: 'image/jpeg',
             extension: 'jpg',
             size: 2048,
-            dimensions: ['width' => 100, 'height' => 100]
+            dimensions: ['width' => 100, 'height' => 100],
         );
 
         $result = new SingleResult(success: true, file: $processed);
@@ -48,8 +48,8 @@ class BatchResultTest extends TestCase
         $batch = new BatchResult(
             successful: [$f1],
             failed: [
-                ['file' => $rawFail, 'error' => 'File dangerous', 'code' => 'ERR_DANGEROUS']
-            ]
+                ['file' => $rawFail, 'error' => 'File dangerous', 'code' => 'ERR_DANGEROUS'],
+            ],
         );
 
         $this->assertFalse($batch->allSuccessful());

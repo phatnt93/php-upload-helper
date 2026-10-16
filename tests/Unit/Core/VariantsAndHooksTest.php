@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace UploadHelper\Tests\Unit\Core;
 
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use UploadHelper\Core\FileCollection;
 use UploadHelper\Core\ProcessedFile;
 use UploadHelper\Core\UploadedFile;
@@ -13,6 +14,7 @@ use UploadHelper\Storage\LocalStorage;
 use UploadHelper\Tests\TestCase;
 use UploadHelper\Upload;
 
+#[RequiresPhpExtension('gd')]
 class VariantsAndHooksTest extends TestCase
 {
     public function testSingleFileMultiVariant(): void
@@ -200,7 +202,8 @@ class VariantsAndHooksTest extends TestCase
 
         // Custom storage mô phỏng move_uploaded_file: lưu tệp vào đích và xóa nguồn tại tmpPath
         $storage = new class extends LocalStorage {
-            public function save(UploadedFile $file, string $destinationDir, string $targetFilename, bool $overwrite = false, int $chmod = 0755): string {
+            public function save(UploadedFile $file, string $destinationDir, string $targetFilename, bool $overwrite = false, int $chmod = 0755): string
+            {
                 $dest = parent::save($file, $destinationDir, $targetFilename, $overwrite, $chmod);
                 // Xóa nguồn tại tmpPath mô phỏng move_uploaded_file trong môi trường HTTP thật
                 @unlink($file->getTmpPath());

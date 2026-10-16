@@ -22,7 +22,7 @@ class PixelFloodGuard
     public static function assertSafe(
         string $filePath,
         ?int $maxPixels = null,
-        ?int $maxMemoryBytes = null
+        ?int $maxMemoryBytes = null,
     ): void {
         if (!file_exists($filePath) || !is_readable($filePath)) {
             return;
@@ -35,8 +35,8 @@ class PixelFloodGuard
             return;
         }
 
-        $width = (int) ($imageInfo[0] ?? 0);
-        $height = (int) ($imageInfo[1] ?? 0);
+        $width = $imageInfo[0];
+        $height = $imageInfo[1];
 
         if ($width <= 0 || $height <= 0) {
             return;
@@ -45,11 +45,11 @@ class PixelFloodGuard
         // 1. Kiểm tra kích thước cực hạn bất thường trên từng trục (> 65,535px)
         if ($width > 65535 || $height > 65535) {
             throw SecurityException::forCode('ERR_IMAGE_PIXEL_FLOOD', [
-                    'width'     => $width,
-                    'height'    => $height,
-                    'pixels'    => round(($width * $height) / 1_000_000, 2),
-                    'limit_px'  => $maxPixels ?? self::DEFAULT_MAX_PIXELS,
-                ]);
+                'width'     => $width,
+                'height'    => $height,
+                'pixels'    => round(($width * $height) / 1_000_000, 2),
+                'limit_px'  => $maxPixels ?? self::DEFAULT_MAX_PIXELS,
+            ]);
         }
 
         $totalPixels = $width * $height;
@@ -61,11 +61,11 @@ class PixelFloodGuard
             $limitMp = round($pixelLimit / 1_000_000, 2);
 
             throw SecurityException::forCode('ERR_IMAGE_PIXEL_FLOOD', [
-                    'width'     => $width,
-                    'height'    => $height,
-                    'pixels'    => $mp,
-                    'limit_px'  => $limitMp,
-                ]);
+                'width'     => $width,
+                'height'    => $height,
+                'pixels'    => $mp,
+                'limit_px'  => $limitMp,
+            ]);
         }
 
         // 3. Ước tính lượng RAM cần dùng khi GD giải nén ảnh
@@ -78,11 +78,11 @@ class PixelFloodGuard
             $limitMb = round($memoryLimit / 1024 / 1024, 2);
 
             throw SecurityException::forCode('ERR_IMAGE_PIXEL_FLOOD', [
-                    'width'            => $width,
-                    'height'           => $height,
-                    'estimated_memory' => $estimatedMb,
-                    'limit_memory'     => $limitMb,
-                ]);
+                'width'            => $width,
+                'height'           => $height,
+                'estimated_memory' => $estimatedMb,
+                'limit_memory'     => $limitMb,
+            ]);
         }
     }
 }

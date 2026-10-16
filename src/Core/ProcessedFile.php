@@ -19,9 +19,8 @@ class ProcessedFile
         private readonly ?array $dimensions = null,
         private readonly ?string $fieldKey = null,
         private ?string $url = null,
-        private ?string $sha256 = null
-    ) {
-    }
+        private ?string $sha256 = null,
+    ) {}
 
     public function getOriginalName(): string
     {
@@ -106,9 +105,6 @@ class ProcessedFile
         return round($bytes, $precision) . ' ' . $units[$pow];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     public function getHash(string $algo = 'sha256'): string
     {
         if (file_exists($this->savedPath)) {
@@ -133,6 +129,9 @@ class ProcessedFile
         return $this->getHash('md5');
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return [
@@ -143,7 +142,7 @@ class ProcessedFile
             'extension'     => $this->extension,
             'size'          => $this->size,
             'sha256'        => $this->getSha256(),
-            'formatted_size'=> $this->getFormattedSize(),
+            'formatted_size' => $this->getFormattedSize(),
             'dimensions'    => $this->dimensions,
             'field_key'     => $this->fieldKey,
             'url'           => $this->url,

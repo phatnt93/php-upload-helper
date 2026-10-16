@@ -38,7 +38,7 @@ final class LocaleParityTest extends TestCase
             self::assertSame(
                 self::placeholders($template),
                 self::placeholders($other[$key] ?? ''),
-                "Placeholder mismatch for '{$key}' in '{$locale}'."
+                "Placeholder mismatch for '{$key}' in '{$locale}'.",
             );
         }
     }

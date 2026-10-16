@@ -19,9 +19,8 @@ class ActionContext
         private int $chmod = 0755,
         private ?ImageDriverInterface $imageDriver = null,
         private ?StorageInterface $storage = null,
-        private array $attributes = []
-    ) {
-    }
+        private array $attributes = [],
+    ) {}
 
     public function getDestinationDir(): ?string
     {

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace UploadHelper\Core;
 
-use Closure;
 use UploadHelper\Contracts\ImageDriverInterface;
 use UploadHelper\Contracts\ScannerInterface;
 use UploadHelper\Contracts\StorageInterface;
@@ -139,7 +138,7 @@ class BatchUploadBuilder
         ?int $minW = null,
         ?int $minH = null,
         ?int $maxW = null,
-        ?int $maxH = null
+        ?int $maxH = null,
     ): self {
         $this->dimensionConstraints = [
             'min_width'  => $minW,
@@ -268,7 +267,7 @@ class BatchUploadBuilder
         int $width,
         int $height,
         string $mode = 'fit',
-        string $background = '#FFFFFF'
+        string $background = '#FFFFFF',
     ): self {
         $this->imageActions[] = [
             'type' => 'resize',
@@ -413,7 +412,7 @@ class BatchUploadBuilder
                     $this->dimensionConstraints['min_width'] ?? null,
                     $this->dimensionConstraints['min_height'] ?? null,
                     $this->dimensionConstraints['max_width'] ?? null,
-                    $this->dimensionConstraints['max_height'] ?? null
+                    $this->dimensionConstraints['max_height'] ?? null,
                 );
             }
             if ($this->maxPixels !== null) {
@@ -469,7 +468,7 @@ class BatchUploadBuilder
                             $action['args']['width'],
                             $action['args']['height'],
                             $action['args']['mode'],
-                            $action['args']['background']
+                            $action['args']['background'],
                         );
                         break;
                     case 'crop':
@@ -477,7 +476,7 @@ class BatchUploadBuilder
                             $action['args']['width'],
                             $action['args']['height'],
                             $action['args']['x'],
-                            $action['args']['y']
+                            $action['args']['y'],
                         );
                         break;
                     case 'rotate':
@@ -537,7 +536,7 @@ class BatchUploadBuilder
 
         $batchResult = new BatchResult(
             successful: $this->rollbackOnError && !empty($failed) ? [] : $successful,
-            failed: $failed
+            failed: $failed,
         );
 
         if ($batchResult->allSuccessful()) {

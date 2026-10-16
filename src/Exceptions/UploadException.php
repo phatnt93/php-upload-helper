@@ -22,7 +22,7 @@ class UploadException extends RuntimeException
         private readonly string $errorCode = 'ERR_PROCESS_FAILED',
         private readonly array $context = [],
         int $code = 0,
-        ?Throwable $previous = null
+        ?Throwable $previous = null,
     ) {
         parent::__construct($message, $code, $previous);
     }

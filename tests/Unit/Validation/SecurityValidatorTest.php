@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace UploadHelper\Tests\Unit\Validation;
 
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use UploadHelper\Core\UploadedFile;
 use UploadHelper\Exceptions\SecurityException;
 use UploadHelper\Exceptions\ValidationException;
 use UploadHelper\Tests\TestCase;
 use UploadHelper\Validation\SecurityValidator;
-use UploadHelper\Validation\SvgSanitizer;
 
 class SecurityValidatorTest extends TestCase
 {
+    #[RequiresPhpExtension('gd')]
     public function testValidFilePasses(): void
     {
         $tmp = $this->createTestImage(200, 200, 'jpg');
@@ -21,7 +22,7 @@ class SecurityValidatorTest extends TestCase
         $validator = new SecurityValidator(
             allowedExtensions: ['jpg', 'png'],
             allowedMimes: ['image/jpeg', 'image/png'],
-            maxSize: '2M'
+            maxSize: '2M',
         );
 
         $validator->validate($file);
@@ -96,7 +97,7 @@ class SecurityValidatorTest extends TestCase
 
         $validator = new SecurityValidator(
             allowedExtensions: ['jpg'],
-            allowedMimes: ['image/jpeg']
+            allowedMimes: ['image/jpeg'],
         );
 
         try {
@@ -108,6 +109,7 @@ class SecurityValidatorTest extends TestCase
         }
     }
 
+    #[RequiresPhpExtension('gd')]
     public function testMimeWhitelistIsCaseInsensitive(): void
     {
         $tmp = $this->createTestImage(50, 50, 'png');
@@ -119,13 +121,14 @@ class SecurityValidatorTest extends TestCase
         $this->assertTrue($file->isOk());
     }
 
+    #[RequiresPhpExtension('gd')]
     public function testDimensionConstraints(): void
     {
         $tmp = $this->createTestImage(100, 100, 'jpg');
         $file = new UploadedFile('small.jpg', 'image/jpeg', filesize($tmp), $tmp);
 
         $validator = new SecurityValidator(
-            dimensionConstraints: ['min_width' => 200]
+            dimensionConstraints: ['min_width' => 200],
         );
 
         $this->expectException(ValidationException::class);

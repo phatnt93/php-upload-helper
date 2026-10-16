@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace UploadHelper\Tests\Unit\Core;
 
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use UploadHelper\Exceptions\UploadException;
 use UploadHelper\Tests\TestCase;
 use UploadHelper\Upload;
 
 class AlternativeInputsTest extends TestCase
 {
+    #[RequiresPhpExtension('gd')]
     public function testFromPath(): void
     {
         $destDir = $this->createTempDir();
@@ -66,11 +68,26 @@ class AlternativeInputsTest extends TestCase
         $destDir = $this->createTempDir();
 
         $psr7Mock = new class {
-            public function getClientFilename(): string { return 'document.pdf'; }
-            public function getClientMediaType(): string { return 'application/pdf'; }
-            public function getSize(): int { return 15; }
-            public function getError(): int { return UPLOAD_ERR_OK; }
-            public function getStream(): string { return 'fake pdf stream'; }
+            public function getClientFilename(): string
+            {
+                return 'document.pdf';
+            }
+            public function getClientMediaType(): string
+            {
+                return 'application/pdf';
+            }
+            public function getSize(): int
+            {
+                return 15;
+            }
+            public function getError(): int
+            {
+                return UPLOAD_ERR_OK;
+            }
+            public function getStream(): string
+            {
+                return 'fake pdf stream';
+            }
         };
 
         $result = Upload::fromPsr7($psr7Mock)
@@ -80,6 +97,7 @@ class AlternativeInputsTest extends TestCase
         $this->assertTrue($result->isSuccess());
         $this->assertSame('document.pdf', $result->getFilename());
         $this->assertFileExists($result->getFilePath());
+        $this->assertSame('fake pdf stream', file_get_contents((string) $result->getFilePath()));
     }
 
     public function testFromPsr7MultipleFiles(): void
@@ -87,19 +105,49 @@ class AlternativeInputsTest extends TestCase
         $destDir = $this->createTempDir();
 
         $psr7_1 = new class {
-            public function getClientFilename(): string { return 'f1.txt'; }
-            public function getClientMediaType(): string { return 'text/plain'; }
-            public function getSize(): int { return 4; }
-            public function getError(): int { return UPLOAD_ERR_OK; }
-            public function getStream(): string { return 'foo1'; }
+            public function getClientFilename(): string
+            {
+                return 'f1.txt';
+            }
+            public function getClientMediaType(): string
+            {
+                return 'text/plain';
+            }
+            public function getSize(): int
+            {
+                return 4;
+            }
+            public function getError(): int
+            {
+                return UPLOAD_ERR_OK;
+            }
+            public function getStream(): string
+            {
+                return 'foo1';
+            }
         };
 
         $psr7_2 = new class {
-            public function getClientFilename(): string { return 'f2.txt'; }
-            public function getClientMediaType(): string { return 'text/plain'; }
-            public function getSize(): int { return 4; }
-            public function getError(): int { return UPLOAD_ERR_OK; }
-            public function getStream(): string { return 'foo2'; }
+            public function getClientFilename(): string
+            {
+                return 'f2.txt';
+            }
+            public function getClientMediaType(): string
+            {
+                return 'text/plain';
+            }
+            public function getSize(): int
+            {
+                return 4;
+            }
+            public function getError(): int
+            {
+                return UPLOAD_ERR_OK;
+            }
+            public function getStream(): string
+            {
+                return 'foo2';
+            }
         };
 
         $batch = Upload::fromPsr7([$psr7_1, $psr7_2])

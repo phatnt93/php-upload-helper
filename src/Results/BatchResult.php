@@ -17,9 +17,8 @@ class BatchResult implements ResultInterface, Countable
      */
     public function __construct(
         private readonly array $successful = [],
-        private readonly array $failed = []
-    ) {
-    }
+        private readonly array $failed = [],
+    ) {}
 
     public function allSuccessful(): bool
     {

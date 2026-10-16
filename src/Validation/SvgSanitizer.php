@@ -13,7 +13,7 @@ class SvgSanitizer
 {
     /** @var array<int, string> */
     public const BLOCKED_TAGS = [
-        'script', 'foreignobject', 'iframe', 'object', 'embed', 'applet', 'meta', 'link'
+        'script', 'foreignobject', 'iframe', 'object', 'embed', 'applet', 'meta', 'link',
     ];
 
     /**
@@ -51,20 +51,20 @@ class SvgSanitizer
         $dom = new DOMDocument();
         $dom->formatOutput = true;
 
-        $previousEntityLoader = null;
-        if (function_exists('libxml_set_external_entity_subsystem')) {
-            $previousEntityLoader = libxml_set_external_entity_subsystem(static function () {
-                return null;
-            });
-        }
-        libxml_use_internal_errors(true);
+        // Block every external entity / DTD fetch (XXE) while parsing, then restore the caller's loader.
+        $previousEntityLoader = function_exists('libxml_get_external_entity_loader')
+            ? libxml_get_external_entity_loader()
+            : null;
+        libxml_set_external_entity_loader(static fn() => null);
+        $previousInternalErrors = libxml_use_internal_errors(true);
 
-        $loaded = $dom->loadXML($svgXml, LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR);
-
-        if ($previousEntityLoader !== null && function_exists('libxml_set_external_entity_subsystem')) {
-            libxml_set_external_entity_subsystem($previousEntityLoader);
+        try {
+            $loaded = $dom->loadXML($svgXml, LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR);
+        } finally {
+            libxml_set_external_entity_loader($previousEntityLoader);
+            libxml_clear_errors();
+            libxml_use_internal_errors($previousInternalErrors);
         }
-        libxml_clear_errors();
 
         if (!$loaded) {
             throw SecurityException::forCode('ERR_INVALID_SVG_XML');

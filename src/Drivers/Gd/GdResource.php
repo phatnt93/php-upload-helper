@@ -11,9 +11,8 @@ class GdResource implements ImageResourceInterface
 {
     public function __construct(
         private ?GdImage $handle,
-        private readonly string $format
-    ) {
-    }
+        private readonly string $format,
+    ) {}
 
     public function getWidth(): int
     {

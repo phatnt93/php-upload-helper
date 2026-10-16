@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace UploadHelper\Tests\Integration;
 
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use UploadHelper\Tests\TestCase;
 use UploadHelper\Upload;
 
+#[RequiresPhpExtension('gd')]
 class BatchUploadIntegrationTest extends TestCase
 {
     public function testBatchUploadAllSuccessful(): void

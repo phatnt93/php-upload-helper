@@ -35,7 +35,7 @@ class GdDriver implements ImageDriverInterface
             default      => @imagecreatefromstring((string) file_get_contents($filePath)),
         };
 
-        if ($handle === false || !$handle instanceof GdImage) {
+        if ($handle === false) {
             throw ImageProcessingException::cannotDecode($filePath);
         }
 
@@ -61,7 +61,7 @@ class GdDriver implements ImageDriverInterface
         int $targetHeight,
         string $mode = 'fit',
         bool $allowEnlarge = false,
-        string $background = '#FFFFFF'
+        string $background = '#FFFFFF',
     ): ImageResourceInterface {
         $srcHandle = $image->getHandle();
         if (!$srcHandle instanceof GdImage) {
@@ -155,7 +155,7 @@ class GdDriver implements ImageDriverInterface
                 break;
         }
 
-        $canvas = imagecreatetruecolor($canvasW, $canvasH);
+        $canvas = ($canvasW >= 1 && $canvasH >= 1) ? imagecreatetruecolor($canvasW, $canvasH) : false;
         if ($canvas === false) {
             throw ImageProcessingException::canvasNotCreated($canvasW, $canvasH);
         }
@@ -169,7 +169,9 @@ class GdDriver implements ImageDriverInterface
             imagealphablending($canvas, false);
             imagesavealpha($canvas, true);
             $transparent = imagecolorallocatealpha($canvas, 0, 0, 0, 127);
-            imagefill($canvas, 0, 0, $transparent);
+            if ($transparent !== false) {
+                imagefill($canvas, 0, 0, $transparent);
+            }
         }
 
         imagecopyresampled(
@@ -182,7 +184,7 @@ class GdDriver implements ImageDriverInterface
             $dstW,
             $dstH,
             $srcW,
-            $srcH
+            $srcH,
         );
 
         imagealphablending($canvas, true);
@@ -196,14 +198,14 @@ class GdDriver implements ImageDriverInterface
         int $width,
         int $height,
         int $x = 0,
-        int $y = 0
+        int $y = 0,
     ): ImageResourceInterface {
         $srcHandle = $image->getHandle();
         if (!$srcHandle instanceof GdImage) {
             throw ImageProcessingException::invalidHandle();
         }
 
-        $cropped = imagecreatetruecolor($width, $height);
+        $cropped = ($width >= 1 && $height >= 1) ? imagecreatetruecolor($width, $height) : false;
         if ($cropped === false) {
             throw ImageProcessingException::canvasNotCreated($width, $height);
         }
@@ -211,7 +213,9 @@ class GdDriver implements ImageDriverInterface
         imagealphablending($cropped, false);
         imagesavealpha($cropped, true);
         $transparent = imagecolorallocatealpha($cropped, 0, 0, 0, 127);
-        imagefill($cropped, 0, 0, $transparent);
+        if ($transparent !== false) {
+            imagefill($cropped, 0, 0, $transparent);
+        }
 
         imagecopyresampled($cropped, $srcHandle, 0, 0, $x, $y, $width, $height, $width, $height);
 
@@ -224,7 +228,7 @@ class GdDriver implements ImageDriverInterface
     public function rotate(
         ImageResourceInterface $image,
         float $angle,
-        string $background = '#000000'
+        string $background = '#000000',
     ): ImageResourceInterface {
         $srcHandle = $image->getHandle();
         if (!$srcHandle instanceof GdImage) {
@@ -268,7 +272,7 @@ class GdDriver implements ImageDriverInterface
         string $position = 'bottom-right',
         int $opacity = 100,
         int $offsetX = 10,
-        int $offsetY = 10
+        int $offsetY = 10,
     ): ImageResourceInterface {
         $srcHandle = $image->getHandle();
         if (!$srcHandle instanceof GdImage) {
@@ -307,7 +311,7 @@ class GdDriver implements ImageDriverInterface
         ?string $background = null,
         int $backgroundOpacity = 0,
         int $offsetX = 10,
-        int $offsetY = 10
+        int $offsetY = 10,
     ): ImageResourceInterface {
         $srcHandle = $image->getHandle();
         if (!$srcHandle instanceof GdImage) {
@@ -362,7 +366,7 @@ class GdDriver implements ImageDriverInterface
     public function filter(
         ImageResourceInterface $image,
         string $filterType,
-        array $args = []
+        array $args = [],
     ): ImageResourceInterface {
         $srcHandle = $image->getHandle();
         if (!$srcHandle instanceof GdImage) {
@@ -407,7 +411,7 @@ class GdDriver implements ImageDriverInterface
         ImageResourceInterface $image,
         string $destinationPath,
         string $format,
-        int $quality = 85
+        int $quality = 85,
     ): bool {
         $srcHandle = $image->getHandle();
         if (!$srcHandle instanceof GdImage) {
@@ -437,11 +441,11 @@ class GdDriver implements ImageDriverInterface
         int $elemH,
         string $position,
         int $offsetX,
-        int $offsetY
+        int $offsetY,
     ): array {
         return match (strtolower($position)) {
             'top-left', 'tl'        => [$offsetX, $offsetY],
-            'top', 't', 'top-center'=> [(int) round(($canvasW - $elemW) / 2), $offsetY],
+            'top', 't', 'top-center' => [(int) round(($canvasW - $elemW) / 2), $offsetY],
             'top-right', 'tr'       => [$canvasW - $elemW - $offsetX, $offsetY],
             'center', 'c', 'middle' => [(int) round(($canvasW - $elemW) / 2), (int) round(($canvasH - $elemH) / 2)],
             'bottom-left', 'bl'     => [$offsetX, $canvasH - $elemH - $offsetY],
@@ -453,13 +457,7 @@ class GdDriver implements ImageDriverInterface
 
     private static function allocateColor(GdImage $image, string $hexColor): int
     {
-        $hex = ltrim($hexColor, '#');
-        if (strlen($hex) === 3) {
-            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
-        }
-        $r = (int) hexdec(substr($hex, 0, 2));
-        $g = (int) hexdec(substr($hex, 2, 2));
-        $b = (int) hexdec(substr($hex, 4, 2));
+        [$r, $g, $b] = self::parseHexColor($hexColor);
 
         $color = imagecolorallocate($image, $r, $g, $b);
         return $color !== false ? $color : 0;
@@ -467,18 +465,27 @@ class GdDriver implements ImageDriverInterface
 
     private static function allocateColorWithAlpha(GdImage $image, string $hexColor, int $opacity): int
     {
+        [$r, $g, $b] = self::parseHexColor($hexColor);
+
+        // GD alpha: 0 (opaque) to 127 (fully transparent)
+        $alpha = max(0, min(127, (int) round((100 - max(0, min(100, $opacity))) * 1.27)));
+
+        $color = imagecolorallocatealpha($image, $r, $g, $b, $alpha);
+        return $color !== false ? $color : 0;
+    }
+
+    /**
+     * @return array{int<0, 255>, int<0, 255>, int<0, 255>}
+     */
+    private static function parseHexColor(string $hexColor): array
+    {
         $hex = ltrim($hexColor, '#');
         if (strlen($hex) === 3) {
             $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
         }
-        $r = (int) hexdec(substr($hex, 0, 2));
-        $g = (int) hexdec(substr($hex, 2, 2));
-        $b = (int) hexdec(substr($hex, 4, 2));
 
-        // GD alpha: 0 (opaque) to 127 (fully transparent)
-        $alpha = (int) round((100 - max(0, min(100, $opacity))) * 1.27);
+        $channel = static fn(int $offset): int => max(0, min(255, (int) hexdec(substr($hex, $offset, 2))));
 
-        $color = imagecolorallocatealpha($image, $r, $g, $b, $alpha);
-        return $color !== false ? $color : 0;
+        return [$channel(0), $channel(2), $channel(4)];
     }
 }

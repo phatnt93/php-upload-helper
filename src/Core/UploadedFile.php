@@ -20,7 +20,7 @@ class UploadedFile
         private readonly int $size,
         private readonly string $tmpPath,
         private readonly int $errorCode = UPLOAD_ERR_OK,
-        private readonly ?string $fieldKey = null
+        private readonly ?string $fieldKey = null,
     ) {
         $cleanOriginal = basename($this->originalName);
         $this->currentName = pathinfo($cleanOriginal, PATHINFO_FILENAME);
@@ -145,7 +145,7 @@ class UploadedFile
             if ($finfo !== false) {
                 $mime = finfo_file($finfo, $this->currentPath);
                 finfo_close($finfo);
-                if ($mime !== false && is_string($mime) && $mime !== '') {
+                if ($mime !== false && $mime !== '') {
                     $this->detectedMime = strtolower($mime);
                     return $this->detectedMime;
                 }
@@ -154,7 +154,7 @@ class UploadedFile
 
         if (function_exists('mime_content_type')) {
             $mime = mime_content_type($this->currentPath);
-            if ($mime !== false && is_string($mime) && $mime !== '') {
+            if ($mime !== false && $mime !== '') {
                 $this->detectedMime = strtolower($mime);
                 return $this->detectedMime;
             }
@@ -185,7 +185,7 @@ class UploadedFile
         }
 
         $info = @getimagesize($this->currentPath);
-        if ($info === false || !isset($info[0], $info[1])) {
+        if ($info === false) {
             $this->dimensions = null;
             return null;
         }

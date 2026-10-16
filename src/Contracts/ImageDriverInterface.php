@@ -25,7 +25,7 @@ interface ImageDriverInterface
         int $targetHeight,
         string $mode = 'fit',
         bool $allowEnlarge = false,
-        string $background = '#FFFFFF'
+        string $background = '#FFFFFF',
     ): ImageResourceInterface;
 
     /**
@@ -36,7 +36,7 @@ interface ImageDriverInterface
         int $width,
         int $height,
         int $x = 0,
-        int $y = 0
+        int $y = 0,
     ): ImageResourceInterface;
 
     /**
@@ -45,7 +45,7 @@ interface ImageDriverInterface
     public function rotate(
         ImageResourceInterface $image,
         float $angle,
-        string $background = '#000000'
+        string $background = '#000000',
     ): ImageResourceInterface;
 
     /**
@@ -62,7 +62,7 @@ interface ImageDriverInterface
         string $position = 'bottom-right',
         int $opacity = 100,
         int $offsetX = 10,
-        int $offsetY = 10
+        int $offsetY = 10,
     ): ImageResourceInterface;
 
     /**
@@ -78,7 +78,7 @@ interface ImageDriverInterface
         ?string $background = null,
         int $backgroundOpacity = 0,
         int $offsetX = 10,
-        int $offsetY = 10
+        int $offsetY = 10,
     ): ImageResourceInterface;
 
     /**
@@ -89,7 +89,7 @@ interface ImageDriverInterface
     public function filter(
         ImageResourceInterface $image,
         string $filterType,
-        array $args = []
+        array $args = [],
     ): ImageResourceInterface;
 
     /**
@@ -104,6 +104,6 @@ interface ImageDriverInterface
         ImageResourceInterface $image,
         string $destinationPath,
         string $format,
-        int $quality = 85
+        int $quality = 85,
     ): bool;
 }

@@ -14,9 +14,8 @@ class SaveAction implements ActionInterface
 {
     public function __construct(
         private ?string $destinationDir = null,
-        private ?int $chmod = null
-    ) {
-    }
+        private ?int $chmod = null,
+    ) {}
 
     public function getName(): string
     {
@@ -48,7 +47,7 @@ class SaveAction implements ActionInterface
             $dir,
             $file->getCurrentFilename(),
             $overwrite,
-            $chmod
+            $chmod,
         );
 
         $file->setCurrentPath($savedPath);

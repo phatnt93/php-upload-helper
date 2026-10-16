@@ -84,7 +84,7 @@ class UploadNormalizer
                     size: (int) ($spec['size'] ?? 0),
                     tmpPath: (string) ($spec['tmp_name'] ?? ''),
                     errorCode: $error,
-                    fieldKey: $prefix
+                    fieldKey: $prefix,
                 ),
             ];
         }
@@ -106,7 +106,7 @@ class UploadNormalizer
         array $spec,
         array &$result,
         ?string $currentKey = null,
-        bool $ignoreNoFile = true
+        bool $ignoreNoFile = true,
     ): void {
         $names = $spec['name'] ?? [];
         if (!is_array($names)) {
@@ -139,7 +139,7 @@ class UploadNormalizer
                     size: (int) $subSpec['size'],
                     tmpPath: (string) $subSpec['tmp_name'],
                     errorCode: $error,
-                    fieldKey: $fieldKey
+                    fieldKey: $fieldKey,
                 );
             }
         }

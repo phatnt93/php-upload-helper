@@ -13,9 +13,8 @@ class FormatConvertAction implements ActionInterface
 {
     public function __construct(
         private readonly string $targetFormat,
-        private readonly int $quality = 85
-    ) {
-    }
+        private readonly int $quality = 85,
+    ) {}
 
     public function getName(): string
     {

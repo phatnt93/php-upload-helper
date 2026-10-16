@@ -16,9 +16,8 @@ class FilterAction implements ActionInterface
      */
     public function __construct(
         private readonly string $filterType,
-        private readonly array $args = []
-    ) {
-    }
+        private readonly array $args = [],
+    ) {}
 
     public function getName(): string
     {

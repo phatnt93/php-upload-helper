@@ -7,12 +7,11 @@ namespace UploadHelper\Actions\Image;
 use UploadHelper\Contracts\ActionInterface;
 use UploadHelper\Core\ActionContext;
 use UploadHelper\Core\UploadedFile;
+use UploadHelper\Drivers\Gd\GdDriver;
 
 class StripExifAction implements ActionInterface
 {
-    public function __construct(private readonly bool $keepOrientation = true)
-    {
-    }
+    public function __construct(private readonly bool $keepOrientation = true) {}
 
     public function getName(): string
     {
@@ -25,7 +24,11 @@ class StripExifAction implements ActionInterface
             return $file;
         }
 
-        $driver = $context->getImageDriver();
+        $driver = $context->getImageDriver() ?? new GdDriver();
+        if (!$driver->isAvailable()) {
+            return $file;
+        }
+
         $sourcePath = $file->getCurrentPath();
 
         $resource = $driver->load($sourcePath);

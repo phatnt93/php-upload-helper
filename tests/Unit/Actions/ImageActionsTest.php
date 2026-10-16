@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace UploadHelper\Tests\Unit\Actions;
 
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use UploadHelper\Actions\Image\CropAction;
 use UploadHelper\Actions\Image\FilterAction;
 use UploadHelper\Actions\Image\FlipAction;
@@ -14,6 +15,7 @@ use UploadHelper\Core\ActionContext;
 use UploadHelper\Core\UploadedFile;
 use UploadHelper\Tests\TestCase;
 
+#[RequiresPhpExtension('gd')]
 class ImageActionsTest extends TestCase
 {
     public function testResizeAction(): void

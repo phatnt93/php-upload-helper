@@ -20,9 +20,8 @@ class WatermarkTextAction implements ActionInterface
         private readonly ?string $background = null,
         private readonly int $backgroundOpacity = 0,
         private readonly int $offsetX = 10,
-        private readonly int $offsetY = 10
-    ) {
-    }
+        private readonly int $offsetY = 10,
+    ) {}
 
     public function getName(): string
     {
@@ -51,7 +50,7 @@ class WatermarkTextAction implements ActionInterface
             $this->background,
             $this->backgroundOpacity,
             $this->offsetX,
-            $this->offsetY
+            $this->offsetY,
         );
 
         $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'uh_wmt_' . uniqid('', true) . '.' . $file->getCurrentExtension();

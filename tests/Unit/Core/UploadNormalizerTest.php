@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace UploadHelper\Tests\Unit\Core;
 
-use UploadHelper\Core\UploadNormalizer;
 use UploadHelper\Core\UploadedFile;
+use UploadHelper\Core\UploadNormalizer;
 use UploadHelper\Tests\TestCase;
 
 class UploadNormalizerTest extends TestCase

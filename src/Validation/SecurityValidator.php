@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace UploadHelper\Validation;
 
-use UploadHelper\Contracts\ValidatorInterface;
 use UploadHelper\Contracts\ScannerInterface;
-use UploadHelper\Exceptions\SecurityException;
+use UploadHelper\Contracts\ValidatorInterface;
 use UploadHelper\Core\UploadedFile;
+use UploadHelper\Exceptions\SecurityException;
 use UploadHelper\Exceptions\ValidationException;
 
 class SecurityValidator implements ValidatorInterface
@@ -28,9 +28,8 @@ class SecurityValidator implements ValidatorInterface
         private int|string|null $maxImageMemory = null,
         private bool $blockPdfJavaScript = false,
         private bool $blockOfficeMacros = false,
-        private ?ScannerInterface $scanner = null
-    ) {
-    }
+        private ?ScannerInterface $scanner = null,
+    ) {}
 
     /**
      * @param array<int, string> $extensions
@@ -154,17 +153,10 @@ class SecurityValidator implements ValidatorInterface
 
         // 7. Chống Decompression Bomb / Pixel Flood DoS cho ảnh
         if ($file->isImage() && file_exists($file->getCurrentPath())) {
-            $maxBytes = null;
-            if ($this->maxImageMemory !== null) {
-                $maxBytes = is_numeric($this->maxImageMemory)
-                    ? (int) $this->maxImageMemory
-                    : SizeValidator::parseSizeToBytes((string) $this->maxImageMemory);
-            }
-
             PixelFloodGuard::assertSafe(
                 $file->getCurrentPath(),
                 $this->maxPixels,
-                $maxBytes
+                SizeValidator::parseToBytes($this->maxImageMemory),
             );
         }
 

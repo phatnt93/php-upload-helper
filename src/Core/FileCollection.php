@@ -17,9 +17,7 @@ class FileCollection implements Countable, IteratorAggregate
     /**
      * @param array<int, UploadedFile> $files
      */
-    public function __construct(private array $files = [])
-    {
-    }
+    public function __construct(private array $files = []) {}
 
     /**
      * @return array<int, UploadedFile>

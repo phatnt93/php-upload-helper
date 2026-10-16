@@ -18,7 +18,7 @@ class DocumentSecurityValidator
         string $filePath,
         bool $allowJavaScript = false,
         bool $allowLaunch = false,
-        bool $allowEmbeddedFiles = false
+        bool $allowEmbeddedFiles = false,
     ): void {
         if (!file_exists($filePath) || !is_readable($filePath)) {
             return;

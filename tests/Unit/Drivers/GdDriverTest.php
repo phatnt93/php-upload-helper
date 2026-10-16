@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace UploadHelper\Tests\Unit\Drivers;
 
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use UploadHelper\Drivers\Gd\GdDriver;
 use UploadHelper\Tests\TestCase;
 
+#[RequiresPhpExtension('gd')]
 class GdDriverTest extends TestCase
 {
     private GdDriver $driver;
@@ -15,9 +17,6 @@ class GdDriverTest extends TestCase
     {
         parent::setUp();
         $this->driver = new GdDriver();
-        if (!$this->driver->isAvailable()) {
-            $this->markTestSkipped('GD extension is not available.');
-        }
     }
 
     public function testLoadAndSaveJpeg(): void

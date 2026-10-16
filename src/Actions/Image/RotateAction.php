@@ -13,9 +13,8 @@ class RotateAction implements ActionInterface
 {
     public function __construct(
         private readonly float $angle,
-        private readonly string $background = '#000000'
-    ) {
-    }
+        private readonly string $background = '#000000',
+    ) {}
 
     public function getName(): string
     {

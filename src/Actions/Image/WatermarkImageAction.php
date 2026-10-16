@@ -16,9 +16,8 @@ class WatermarkImageAction implements ActionInterface
         private readonly string $position = 'bottom-right',
         private readonly int $opacity = 100,
         private readonly int $offsetX = 10,
-        private readonly int $offsetY = 10
-    ) {
-    }
+        private readonly int $offsetY = 10,
+    ) {}
 
     public function getName(): string
     {
@@ -43,7 +42,7 @@ class WatermarkImageAction implements ActionInterface
             $this->position,
             $this->opacity,
             $this->offsetX,
-            $this->offsetY
+            $this->offsetY,
         );
 
         $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'uh_wm_' . uniqid('', true) . '.' . $file->getCurrentExtension();

@@ -7,6 +7,4 @@ namespace UploadHelper\Exceptions;
 /**
  * The uploaded file failed a validation rule (size, extension, MIME, dimensions...).
  */
-class ValidationException extends UploadException
-{
-}
+class ValidationException extends UploadException {}

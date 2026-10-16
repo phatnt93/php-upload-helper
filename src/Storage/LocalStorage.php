@@ -23,7 +23,7 @@ class LocalStorage implements StorageInterface
         string $destinationDir,
         string $targetFilename,
         bool $overwrite = false,
-        int $chmod = 0755
+        int $chmod = 0755,
     ): string {
         // 1. Chống Path Traversal trong targetFilename
         $cleanFilename = basename($targetFilename);

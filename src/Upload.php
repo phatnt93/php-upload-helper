@@ -79,7 +79,7 @@ class Upload
             clientMime: $mime,
             size: $size !== false ? $size : 0,
             tmpPath: $localFilePath,
-            errorCode: UPLOAD_ERR_OK
+            errorCode: UPLOAD_ERR_OK,
         );
 
         return new UploadBuilder($uploadedFile);
@@ -123,7 +123,7 @@ class Upload
             clientMime: $mime,
             size: strlen($binaryData),
             tmpPath: $tempPath,
-            errorCode: UPLOAD_ERR_OK
+            errorCode: UPLOAD_ERR_OK,
         );
 
         return new UploadBuilder($uploadedFile);
@@ -140,7 +140,7 @@ class Upload
         int $timeout = 15,
         int $maxDownloadBytes = 52_428_800,
         bool $allowPrivateIp = false,
-        int $maxRedirects = UrlDownloader::DEFAULT_MAX_REDIRECTS
+        int $maxRedirects = UrlDownloader::DEFAULT_MAX_REDIRECTS,
     ): UploadBuilder {
         if (filter_var($url, FILTER_VALIDATE_URL) === false) {
             throw SecurityException::forCode('ERR_SSRF_INVALID_URL', ['url' => $url]);
@@ -168,7 +168,7 @@ class Upload
             clientMime: 'application/octet-stream',
             size: $bytesDownloaded,
             tmpPath: $tempPath,
-            errorCode: UPLOAD_ERR_OK
+            errorCode: UPLOAD_ERR_OK,
         );
 
         return new UploadBuilder($uploadedFile);
@@ -191,7 +191,7 @@ class Upload
             return new BatchUploadBuilder(new FileCollection($files));
         }
 
-        if (is_object($psr7Input) && method_exists($psr7Input, 'getClientFilename')) {
+        if (method_exists($psr7Input, 'getClientFilename')) {
             return new UploadBuilder(self::convertPsr7ToUploadedFile($psr7Input));
         }
 
@@ -200,17 +200,16 @@ class Upload
 
     private static function convertPsr7ToUploadedFile(object $psr7): UploadedFile
     {
-        /** @var mixed $psr7 */
-        $name = (string) ($psr7->getClientFilename() ?? 'unnamed');
-        $mime = (string) ($psr7->getClientMediaType() ?? 'application/octet-stream');
-        $size = (int) ($psr7->getSize() ?? 0);
-        $error = (int) ($psr7->getError() ?? UPLOAD_ERR_OK);
+        $name = self::psr7Scalar($psr7, 'getClientFilename', 'unnamed');
+        $mime = self::psr7Scalar($psr7, 'getClientMediaType', 'application/octet-stream');
+        $size = (int) self::psr7Scalar($psr7, 'getSize', '0');
+        $error = (int) self::psr7Scalar($psr7, 'getError', (string) UPLOAD_ERR_OK);
 
         $tempPath = '';
         if ($error === UPLOAD_ERR_OK) {
             $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'uh_psr7_' . uniqid('', true);
-            $stream = $psr7->getStream();
-            file_put_contents($tempPath, (string) $stream);
+            $stream = method_exists($psr7, 'getStream') ? $psr7->getStream() : null;
+            file_put_contents($tempPath, is_string($stream) || $stream instanceof \Stringable ? (string) $stream : '');
         }
 
         return new UploadedFile(
@@ -218,7 +217,17 @@ class Upload
             clientMime: $mime,
             size: $size,
             tmpPath: $tempPath,
-            errorCode: $error
+            errorCode: $error,
         );
+    }
+
+    /**
+     * Call an optional PSR-7 getter and return its scalar result as a string, or the default.
+     */
+    private static function psr7Scalar(object $psr7, string $method, string $default): string
+    {
+        $value = method_exists($psr7, $method) ? $psr7->{$method}() : null;
+
+        return is_scalar($value) ? (string) $value : $default;
     }
 }

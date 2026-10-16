@@ -61,7 +61,8 @@ class SsrfGuard
 
         $ips = array_values(array_filter(
             $resolved,
-            static fn (mixed $ip): bool => is_string($ip) && filter_var($ip, FILTER_VALIDATE_IP) !== false
+            // filter_var() rejects non-string values returned by a misbehaving custom resolver
+            static fn(mixed $ip): bool => filter_var($ip, FILTER_VALIDATE_IP) !== false,
         ));
         if (empty($ips)) {
             throw SecurityException::forCode('ERR_SSRF_DNS_RESOLVE_FAILED', ['url' => $url, 'host' => $host]);
@@ -189,7 +190,7 @@ class SsrfGuard
                 $v4Hex = substr($hex, 24);
                 $v4Long = hexdec($v4Hex);
                 $v4Ip = long2ip((int) $v4Long);
-                return self::isPrivateOrReservedIp($v4Ip);
+                return $v4Ip === false || self::isPrivateOrReservedIp($v4Ip);
             }
         }
 

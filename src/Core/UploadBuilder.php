@@ -58,7 +58,7 @@ class UploadBuilder
         $this->pipeline = new ActionPipeline();
         $this->context = new ActionContext(
             imageDriver: new GdDriver(),
-            storage: new LocalStorage()
+            storage: new LocalStorage(),
         );
         $this->renameAction = new RenameAction();
     }
@@ -104,7 +104,7 @@ class UploadBuilder
         ?int $minW = null,
         ?int $minH = null,
         ?int $maxW = null,
-        ?int $maxH = null
+        ?int $maxH = null,
     ): self {
         $this->validator->setDimensionConstraints([
             'min_width'  => $minW,
@@ -252,14 +252,14 @@ class UploadBuilder
         int $width,
         int $height,
         string $mode = 'fit',
-        string $background = '#FFFFFF'
+        string $background = '#FFFFFF',
     ): self {
         $this->pipeline->addAction(new ResizeAction(
             $width,
             $height,
             $mode,
             $this->allowEnlarge,
-            $background
+            $background,
         ));
         return $this;
     }
@@ -314,14 +314,14 @@ class UploadBuilder
         string $position = 'bottom-right',
         int $opacity = 100,
         int $offsetX = 10,
-        int $offsetY = 10
+        int $offsetY = 10,
     ): self {
         $this->pipeline->addAction(new WatermarkImageAction(
             $watermarkPath,
             $position,
             $opacity,
             $offsetX,
-            $offsetY
+            $offsetY,
         ));
         return $this;
     }
@@ -335,7 +335,7 @@ class UploadBuilder
         ?string $background = null,
         int $backgroundOpacity = 0,
         int $offsetX = 10,
-        int $offsetY = 10
+        int $offsetY = 10,
     ): self {
         $this->pipeline->addAction(new WatermarkTextAction(
             $text,
@@ -346,7 +346,7 @@ class UploadBuilder
             $background,
             $backgroundOpacity,
             $offsetX,
-            $offsetY
+            $offsetY,
         ));
         return $this;
     }
@@ -490,7 +490,7 @@ class UploadBuilder
             return $this->dispatchResult(new SingleResult(
                 success: false,
                 errorMessage: Translator::translate('ERR_NO_FILE'),
-                errorCode: 'ERR_NO_FILE'
+                errorCode: 'ERR_NO_FILE',
             ));
         }
 
@@ -538,7 +538,7 @@ class UploadBuilder
                 extension: $finalFile->getCurrentExtension(),
                 size: $finalFile->getSize(),
                 dimensions: $finalFile->getImageDimensions(),
-                fieldKey: $this->file->getFieldKey()
+                fieldKey: $this->file->getFieldKey(),
             );
 
             // 5. Xử lý các biến thể (Variants) nếu có
@@ -557,12 +557,18 @@ class UploadBuilder
                         size: $this->file->getSize(),
                         tmpPath: $variantSourcePath,
                         errorCode: $this->file->getErrorCode(),
-                        fieldKey: $this->file->getFieldKey()
+                        fieldKey: $this->file->getFieldKey(),
                     );
 
                     $variantBuilder = new self($variantUploaded);
-                    $variantBuilder->imageDriver($this->context->getImageDriver());
-                    $variantBuilder->storage($this->context->getStorage());
+                    $parentDriver = $this->context->getImageDriver();
+                    if ($parentDriver !== null) {
+                        $variantBuilder->imageDriver($parentDriver);
+                    }
+                    $parentStorage = $this->context->getStorage();
+                    if ($parentStorage !== null) {
+                        $variantBuilder->storage($parentStorage);
+                    }
 
                     // Thực thi cấu hình biến thể
                     $configurator($variantBuilder);
@@ -589,7 +595,7 @@ class UploadBuilder
                 file: $processed,
                 originalFile: $this->file,
                 variants: $processedVariants,
-                variantErrors: $variantErrors
+                variantErrors: $variantErrors,
             ));
 
         } catch (UploadException $e) {
@@ -604,7 +610,7 @@ class UploadBuilder
                 originalFile: $this->file,
                 errorMessage: $message,
                 errorCode: $errorCode,
-                context: $e->getContext() + ['exception' => $e::class, 'reason' => $e->getMessage()]
+                context: $e->getContext() + ['exception' => $e::class, 'reason' => $e->getMessage()],
             ));
         } catch (\Throwable $e) {
             return $this->dispatchResult(new SingleResult(
@@ -612,7 +618,7 @@ class UploadBuilder
                 originalFile: $this->file,
                 errorMessage: Translator::translate('ERR_INTERNAL'),
                 errorCode: 'ERR_INTERNAL',
-                context: ['exception' => $e::class, 'reason' => $e->getMessage()]
+                context: ['exception' => $e::class, 'reason' => $e->getMessage()],
             ));
         } finally {
             if ($preservedTmpPath !== null && file_exists($preservedTmpPath)) {

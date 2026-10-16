@@ -23,7 +23,7 @@ interface StorageInterface
         string $destinationDir,
         string $targetFilename,
         bool $overwrite = false,
-        int $chmod = 0755
+        int $chmod = 0755,
     ): string;
 
     /**

@@ -17,9 +17,8 @@ class ClamAvScanner implements ScannerInterface
      */
     public function __construct(
         private readonly string $socket = 'tcp://127.0.0.1:3310',
-        private readonly int $timeout = 10
-    ) {
-    }
+        private readonly int $timeout = 10,
+    ) {}
 
     public function getThreatName(): ?string
     {

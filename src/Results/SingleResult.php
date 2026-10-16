@@ -23,9 +23,8 @@ class SingleResult implements ResultInterface
         private readonly ?string $errorCode = null,
         private readonly array $context = [],
         private readonly array $variants = [],
-        private readonly array $variantErrors = []
-    ) {
-    }
+        private readonly array $variantErrors = [],
+    ) {}
 
     public function isSuccess(): bool
     {

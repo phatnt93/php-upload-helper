@@ -47,7 +47,7 @@ class SizeValidator
     public static function validate(
         UploadedFile $file,
         int|string|null $maxSize = null,
-        int|string|null $minSize = null
+        int|string|null $minSize = null,
     ): void {
         $actualBytes = $file->getSize();
 
@@ -58,12 +58,12 @@ class SizeValidator
             $formattedActual = $file->getFormattedSize();
 
             throw ValidationException::forCode('ERR_FILE_TOO_LARGE', [
-                    'filename' => $file->getOriginalName(),
-                    'actual_bytes' => $actualBytes,
-                    'max_bytes' => $maxBytes,
-                    'formatted_actual' => $formattedActual,
-                    'formatted_max' => $formattedMax,
-                ]);
+                'filename' => $file->getOriginalName(),
+                'actual_bytes' => $actualBytes,
+                'max_bytes' => $maxBytes,
+                'formatted_actual' => $formattedActual,
+                'formatted_max' => $formattedMax,
+            ]);
         }
 
         // 2. Kiểm tra kích thước tối thiểu
@@ -73,12 +73,12 @@ class SizeValidator
             $formattedActual = $file->getFormattedSize();
 
             throw ValidationException::forCode('ERR_FILE_TOO_SMALL', [
-                    'filename' => $file->getOriginalName(),
-                    'actual_bytes' => $actualBytes,
-                    'min_bytes' => $minBytes,
-                    'formatted_actual' => $formattedActual,
-                    'formatted_min' => $formattedMin,
-                ]);
+                'filename' => $file->getOriginalName(),
+                'actual_bytes' => $actualBytes,
+                'min_bytes' => $minBytes,
+                'formatted_actual' => $formattedActual,
+                'formatted_min' => $formattedMin,
+            ]);
         }
     }
 

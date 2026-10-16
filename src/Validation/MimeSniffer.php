@@ -27,7 +27,7 @@ class MimeSniffer
             if ($finfo !== false) {
                 $mime = finfo_file($finfo, $filePath);
                 finfo_close($finfo);
-                if ($mime !== false && is_string($mime) && $mime !== '') {
+                if ($mime !== false && $mime !== '') {
                     return strtolower($mime);
                 }
             }
@@ -36,7 +36,7 @@ class MimeSniffer
         // 3. Fallback qua mime_content_type
         if (function_exists('mime_content_type')) {
             $mime = mime_content_type($filePath);
-            if ($mime !== false && is_string($mime) && $mime !== '') {
+            if ($mime !== false && $mime !== '') {
                 return strtolower($mime);
             }
         }
@@ -86,8 +86,8 @@ class MimeSniffer
             return 'application/pdf';
         }
 
-        // BMP: BM
-        if (str_starts_with($header, 'BM')) {
+        // BMP: 'BM' + file size + 4 reserved zero bytes (a bare 'BM' prefix matches arbitrary text)
+        if (strlen($header) >= 10 && str_starts_with($header, 'BM') && substr($header, 6, 4) === "\0\0\0\0") {
             return 'image/bmp';
         }
 

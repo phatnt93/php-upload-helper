@@ -11,9 +11,7 @@ use UploadHelper\Drivers\Gd\GdDriver;
 
 class FlipAction implements ActionInterface
 {
-    public function __construct(private readonly string $direction = 'horizontal')
-    {
-    }
+    public function __construct(private readonly string $direction = 'horizontal') {}
 
     public function getName(): string
     {

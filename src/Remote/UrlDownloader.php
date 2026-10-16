@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace UploadHelper\Remote;
 
+use UploadHelper\Exceptions\SecurityException;
 use UploadHelper\Exceptions\UploadException;
 use UploadHelper\Validation\SsrfGuard;
 
@@ -31,7 +32,7 @@ class UrlDownloader
         private readonly int $maxDownloadBytes = 52_428_800,
         private readonly bool $allowPrivateIp = false,
         private readonly int $maxRedirects = self::DEFAULT_MAX_REDIRECTS,
-        ?callable $resolver = null
+        ?callable $resolver = null,
     ) {
         $this->resolver = $resolver;
     }
@@ -52,7 +53,7 @@ class UrlDownloader
 
             [$stream, $headers] = $this->openStream(
                 self::pinnedUrl($currentUrl, $ips[0]),
-                $this->contextOptions($currentUrl)
+                $this->contextOptions($currentUrl),
             );
 
             $status = self::statusCode($headers);
@@ -106,8 +107,8 @@ class UrlDownloader
      */
     private function contextOptions(string $url): array
     {
-        $parts = (array) parse_url($url);
-        $host = trim((string) ($parts['host'] ?? ''), '[]');
+        $parts = self::parseUrl($url);
+        $host = trim($parts['host'], '[]');
         $hostHeader = (str_contains($host, ':') ? "[{$host}]" : $host) . (isset($parts['port']) ? ':' . $parts['port'] : '');
 
         return [
@@ -167,13 +168,13 @@ class UrlDownloader
      */
     private static function pinnedUrl(string $url, string $ip): string
     {
-        $parts = (array) parse_url($url);
+        $parts = self::parseUrl($url);
         $ipHost = str_contains($ip, ':') ? "[{$ip}]" : $ip;
         $port = isset($parts['port']) ? ':' . $parts['port'] : '';
-        $path = (string) ($parts['path'] ?? '/');
+        $path = $parts['path'] ?? '/';
         $query = isset($parts['query']) ? '?' . $parts['query'] : '';
 
-        return strtolower((string) $parts['scheme']) . '://' . $ipHost . $port . ($path === '' ? '/' : $path) . $query;
+        return strtolower($parts['scheme']) . '://' . $ipHost . $port . ($path === '' ? '/' : $path) . $query;
     }
 
     /**
@@ -213,9 +214,9 @@ class UrlDownloader
             return $location;
         }
 
-        $base = (array) parse_url($baseUrl);
-        $scheme = (string) $base['scheme'];
-        $authority = (string) $base['host'] . (isset($base['port']) ? ':' . $base['port'] : '');
+        $base = self::parseUrl($baseUrl);
+        $scheme = $base['scheme'];
+        $authority = $base['host'] . (isset($base['port']) ? ':' . $base['port'] : '');
 
         if (str_starts_with($location, '//')) {
             return $scheme . ':' . $location;
@@ -225,9 +226,24 @@ class UrlDownloader
             return "{$scheme}://{$authority}{$location}";
         }
 
-        $basePath = (string) ($base['path'] ?? '/');
+        $basePath = $base['path'] ?? '/';
         $directory = substr($basePath, 0, (int) strrpos($basePath, '/') + 1);
 
         return "{$scheme}://{$authority}" . ($directory === '' ? '/' : $directory) . $location;
+    }
+
+    /**
+     * Parse a URL that SsrfGuard has already accepted (scheme and host are guaranteed).
+     *
+     * @return array{scheme: string, host: string, port?: int, path?: string, query?: string}
+     */
+    private static function parseUrl(string $url): array
+    {
+        $parts = parse_url($url);
+        if ($parts === false || !isset($parts['scheme'], $parts['host'])) {
+            throw SecurityException::forCode('ERR_SSRF_INVALID_URL', ['url' => $url]);
+        }
+
+        return $parts;
     }
 }

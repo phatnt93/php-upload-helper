@@ -125,7 +125,7 @@ final class Translator
     private static function formatValue(mixed $value): ?string
     {
         if (is_array($value)) {
-            $items = array_filter(array_map(self::formatValue(...), $value), static fn (?string $v): bool => $v !== null);
+            $items = array_filter(array_map(self::formatValue(...), $value), static fn(?string $v): bool => $v !== null);
 
             return implode(', ', $items);
         }

@@ -16,9 +16,8 @@ class ResizeAction implements ActionInterface
         private readonly int $height,
         private readonly string $mode = 'fit',
         private readonly bool $allowEnlarge = false,
-        private readonly string $background = '#FFFFFF'
-    ) {
-    }
+        private readonly string $background = '#FFFFFF',
+    ) {}
 
     public function getName(): string
     {
@@ -43,7 +42,7 @@ class ResizeAction implements ActionInterface
             $this->height,
             $this->mode,
             $this->allowEnlarge,
-            $this->background
+            $this->background,
         );
 
         $tempPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'uh_proc_' . uniqid('', true) . '.' . $file->getCurrentExtension();
