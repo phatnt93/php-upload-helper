@@ -167,9 +167,9 @@ class Upload
 - `variant(string $name, callable(UploadBuilder): void $configurator): self`  
   Registers a child variant (e.g. `'thumb'`, `'preview'`) derived from the same source file.
 - `beforeProcess(callable(UploadedFile): void $callback): self`
-- `afterProcess(callable(UploadedFile): void $callback): self`
-- `onSuccess(callable(ProcessedFile): void $callback): self`
-- `onError(callable(SingleResult): void $callback): self`
+- `onSuccess(callable(ProcessedFile, SingleResult): void $callback): self`
+- `onError(callable(string, string, SingleResult): void $callback): self`
+- `afterProcess(callable(SingleResult): void $callback): self`
 
 ### 3.7 Execution
 - `process(): SingleResult`  
@@ -187,8 +187,12 @@ class Upload
 - `minSize(int|string|null $minSize): self`
 - `rollbackOnError(bool $rollback = true): self`  
   When enabled, if any file in the batch fails, all files uploaded in this batch are deleted.
-- `each(callable(UploadBuilder, int, UploadedFile): void $callback): self`  
+- `each(callable(UploadBuilder, int): void $callback): self`
   Configures per-file rules or actions.
+- `beforeProcess(callable(FileCollection): void $callback): self`
+- `onSuccess(callable(BatchResult): void $callback): self`
+- `onError(callable(BatchResult): void $callback): self`
+- `afterProcess(callable(BatchResult): void $callback): self`
 - `destination(string $destinationDir, int $chmod = 0755): self`
 - `saveTo(string $destinationDir, int $chmod = 0755): self`
 - `process(): BatchResult`

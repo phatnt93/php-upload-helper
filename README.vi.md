@@ -591,21 +591,21 @@ Upload::file($_FILES['contract'])
         // Chạy trước khi tiến hành kiểm tra & xử lý
         Log::info("Bắt đầu xử lý tải lên: " . $uploadedFile->getOriginalName());
     })
-    ->onSuccess(function (ProcessedFile $processedFile): void {
+    ->onSuccess(function (ProcessedFile $processedFile, SingleResult $result): void {
         // Chỉ chạy khi toàn bộ quá trình upload thành công
         Database::recordUpload($processedFile->getFilename(), $processedFile->getSize());
         Notification::send("Tải lên thành công!");
     })
-    ->onError(function (SingleResult $result): void {
+    ->onError(function (string $errorMessage, string $errorCode, SingleResult $result): void {
         // Chạy khi vi phạm validation hoặc lỗi ghi đĩa
-        Log::warning("Tải lên thất bại [{$result->getErrorCode()}]: {$result->getErrorMessage()}");
+        Log::warning("Tải lên thất bại [{$errorCode}]: {$errorMessage}");
     })
-    ->afterProcess(function (UploadedFile $uploadedFile): void {
+    ->afterProcess(function (SingleResult $result): void {
         // Luôn luôn chạy khi kết thúc (dù thành công hay thất bại)
         Metrics::increment('uploads.attempted');
     })
     ->saveTo('/uploads/contracts');
-
+```
 
 ---
 
@@ -903,11 +903,15 @@ Mọi chữ ký callback trong `php-upload-helper` đều được định kiể
 | Phương thức / Hook | Chữ ký Callback | Thời điểm & Mục đích |
 |---|---|---|
 | `variant(string $name, callable $configurator)` | `callable(UploadBuilder $builder): void` | Cấu hình pipeline cho một biến thể ảnh phái sinh |
-| `each(callable $callback)` (Batch) | `callable(UploadBuilder $builder, int $index, UploadedFile $file): void` | Cấu hình quy tắc riêng cho từng file trong batch |
-| `beforeProcess(callable $callback)` | `callable(UploadedFile $file): void` | Thực thi trước khi kiểm tra validation và chạy actions |
-| `afterProcess(callable $callback)` | `callable(UploadedFile $file): void` | Luôn thực thi sau khi pipeline xử lý xong |
-| `onSuccess(callable $callback)` | `callable(ProcessedFile $file): void` | Chỉ thực thi khi file đã được lưu thành công |
-| `onError(callable $callback)` | `callable(SingleResult $result): void` | Thực thi khi vi phạm validation hoặc lỗi ghi đĩa |
+| `each(callable $callback)` (Batch) | `callable(UploadBuilder $builder, int $index): void` | Cấu hình quy tắc riêng cho từng file trong batch |
+| `beforeProcess(callable $callback)` (Đơn) | `callable(UploadedFile $file): void` | Thực thi trước khi kiểm tra validation và chạy actions |
+| `onSuccess(callable $callback)` (Đơn) | `callable(ProcessedFile $file, SingleResult $result): void` | Chỉ thực thi khi file đã được lưu thành công |
+| `onError(callable $callback)` (Đơn) | `callable(string $errorMessage, string $errorCode, SingleResult $result): void` | Thực thi khi vi phạm validation hoặc lỗi ghi đĩa |
+| `afterProcess(callable $callback)` (Đơn) | `callable(SingleResult $result): void` | Luôn thực thi sau khi pipeline xử lý xong (thành công hay thất bại) |
+| `beforeProcess(callable $callback)` (Batch) | `callable(FileCollection $collection): void` | Thực thi trước khi duyệt mẻ upload |
+| `onSuccess(callable $callback)` (Batch) | `callable(BatchResult $result): void` | Chỉ thực thi khi toàn bộ mẻ upload thành công |
+| `onError(callable $callback)` (Batch) | `callable(BatchResult $result): void` | Thực thi khi có một hoặc nhiều file trong mẻ thất bại |
+| `afterProcess(callable $callback)` (Batch) | `callable(BatchResult $result): void` | Luôn thực thi sau khi mẻ upload xử lý xong |
 | `name(Closure $custom)` | `Closure(UploadedFile $file): string` | Hàm sinh tên tệp tin tùy biến theo ngữ cảnh file |
 
 ### Giao Diện Mở Rộng Tùy Chỉnh (Custom Extension Interfaces)

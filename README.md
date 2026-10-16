@@ -586,21 +586,22 @@ if ($result->isSuccess()) {
 ### Lifecycle Hooks & Event Callbacks
 Attach hooks to intercept and react during the upload lifecycle:
 
+```php
 Upload::file($_FILES['contract'])
     ->beforeProcess(function (UploadedFile $uploadedFile): void {
         // Runs before validation & processing
         Log::info("Starting upload for: " . $uploadedFile->getOriginalName());
     })
-    ->onSuccess(function (ProcessedFile $processedFile): void {
+    ->onSuccess(function (ProcessedFile $processedFile, SingleResult $result): void {
         // Runs only when upload succeeded
         Database::recordUpload($processedFile->getFilename(), $processedFile->getSize());
         Notification::send("Upload complete!");
     })
-    ->onError(function (SingleResult $result): void {
+    ->onError(function (string $errorMessage, string $errorCode, SingleResult $result): void {
         // Runs when validation or processing failed
-        Log::warning("Upload failed [{$result->getErrorCode()}]: {$result->getErrorMessage()}");
+        Log::warning("Upload failed [{$errorCode}]: {$errorMessage}");
     })
-    ->afterProcess(function (UploadedFile $uploadedFile): void {
+    ->afterProcess(function (SingleResult $result): void {
         // Always runs after process finishes (success or failure)
         Metrics::increment('uploads.attempted');
     })
@@ -904,11 +905,15 @@ All callback signatures in `php-upload-helper` are strictly typed and committed 
 | Method / Hook | Callback Signature | Timing / Purpose |
 |---|---|---|
 | `variant(string $name, callable $configurator)` | `callable(UploadBuilder $builder): void` | Configures a derivative image variant pipeline |
-| `each(callable $callback)` (Batch) | `callable(UploadBuilder $builder, int $index, UploadedFile $file): void` | Configures per-file rules in a batch |
-| `beforeProcess(callable $callback)` | `callable(UploadedFile $file): void` | Executed prior to validation and pipeline actions |
-| `afterProcess(callable $callback)` | `callable(UploadedFile $file): void` | Executed after pipeline finishes |
-| `onSuccess(callable $callback)` | `callable(ProcessedFile $file): void` | Executed only when file is successfully saved |
-| `onError(callable $callback)` | `callable(SingleResult $result): void` | Executed when validation or processing fails |
+| `each(callable $callback)` (Batch) | `callable(UploadBuilder $builder, int $index): void` | Configures per-file rules in a batch |
+| `beforeProcess(callable $callback)` (Single) | `callable(UploadedFile $file): void` | Executed prior to validation and pipeline actions |
+| `onSuccess(callable $callback)` (Single) | `callable(ProcessedFile $file, SingleResult $result): void` | Executed only when file is successfully saved |
+| `onError(callable $callback)` (Single) | `callable(string $errorMessage, string $errorCode, SingleResult $result): void` | Executed when validation or processing fails |
+| `afterProcess(callable $callback)` (Single) | `callable(SingleResult $result): void` | Executed after pipeline finishes (success or failure) |
+| `beforeProcess(callable $callback)` (Batch) | `callable(FileCollection $collection): void` | Executed prior to processing batch |
+| `onSuccess(callable $callback)` (Batch) | `callable(BatchResult $result): void` | Executed when all files in batch succeed |
+| `onError(callable $callback)` (Batch) | `callable(BatchResult $result): void` | Executed when one or more files in batch fail |
+| `afterProcess(callable $callback)` (Batch) | `callable(BatchResult $result): void` | Executed after batch finishes (success or failure) |
 | `name(Closure $custom)` | `Closure(UploadedFile $file): string` | Custom dynamic filename generator |
 
 ### Custom Extension Interfaces

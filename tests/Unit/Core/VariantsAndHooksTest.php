@@ -229,4 +229,96 @@ class VariantsAndHooksTest extends TestCase
         $this->assertSame(60, $thumb->getWidth());
         $this->assertSame(60, $thumb->getHeight());
     }
+
+    public function testDocumentedTypedLifecycleHooksOnSuccess(): void
+    {
+        $imagePath = $this->createTestImage(100, 100, 'jpeg');
+        $uploaded = new UploadedFile('contract.jpg', 'image/jpeg', filesize($imagePath), $imagePath, UPLOAD_ERR_OK);
+        $destDir = $this->createTempDir();
+
+        $beforeCalled = false;
+        $successCalled = false;
+        $afterCalled = false;
+
+        $result = Upload::file($uploaded)
+            ->beforeProcess(function (UploadedFile $uploadedFile) use (&$beforeCalled): void {
+                $beforeCalled = true;
+                $this->assertSame('contract.jpg', $uploadedFile->getOriginalName());
+            })
+            ->onSuccess(function (ProcessedFile $processedFile, SingleResult $result) use (&$successCalled): void {
+                $successCalled = true;
+                $this->assertNotEmpty($processedFile->getFilename());
+                $this->assertTrue($result->isSuccess());
+            })
+            ->onError(function (string $errorMessage, string $errorCode, SingleResult $result): void {
+                $this->fail('onError should not be called on success');
+            })
+            ->afterProcess(function (SingleResult $result) use (&$afterCalled): void {
+                $afterCalled = true;
+                $this->assertTrue($result->isSuccess());
+            })
+            ->saveTo($destDir);
+
+        $this->assertTrue($result->isSuccess());
+        $this->assertTrue($beforeCalled);
+        $this->assertTrue($successCalled);
+        $this->assertTrue($afterCalled);
+    }
+
+    public function testDocumentedTypedLifecycleHooksOnError(): void
+    {
+        $phpPath = $this->createTempFile('<?php phpinfo();', 'php');
+        $uploaded = new UploadedFile('contract.php', 'text/x-php', filesize($phpPath), $phpPath, UPLOAD_ERR_OK);
+        $destDir = $this->createTempDir();
+
+        $beforeCalled = false;
+        $errorCalled = false;
+        $afterCalled = false;
+
+        $result = Upload::file($uploaded)
+            ->allowedExtensions(['jpg'])
+            ->beforeProcess(function (UploadedFile $uploadedFile) use (&$beforeCalled): void {
+                $beforeCalled = true;
+            })
+            ->onSuccess(function (ProcessedFile $processedFile, SingleResult $result): void {
+                $this->fail('onSuccess should not be called on error');
+            })
+            ->onError(function (string $errorMessage, string $errorCode, SingleResult $result) use (&$errorCalled): void {
+                $errorCalled = true;
+                $this->assertNotEmpty($errorMessage);
+                $this->assertSame('ERR_SECURITY_DANGEROUS_EXTENSION', $errorCode);
+                $this->assertFalse($result->isSuccess());
+            })
+            ->afterProcess(function (SingleResult $result) use (&$afterCalled): void {
+                $afterCalled = true;
+                $this->assertFalse($result->isSuccess());
+            })
+            ->saveTo($destDir);
+
+        $this->assertFalse($result->isSuccess());
+        $this->assertTrue($beforeCalled);
+        $this->assertTrue($errorCalled);
+        $this->assertTrue($afterCalled);
+    }
+
+    public function testDocumentedTypedBatchEachSnippet(): void
+    {
+        $img1 = $this->createTestImage(100, 100, 'jpeg');
+        $img2 = $this->createTestImage(100, 100, 'jpeg');
+        $up1 = new UploadedFile('a.jpg', 'image/jpeg', filesize($img1), $img1, UPLOAD_ERR_OK);
+        $up2 = new UploadedFile('b.jpg', 'image/jpeg', filesize($img2), $img2, UPLOAD_ERR_OK);
+        $destDir = $this->createTempDir();
+
+        $seenIndices = [];
+        $batch = Upload::files([$up1, $up2])
+            ->each(function (\UploadHelper\Core\UploadBuilder $builder, int $index) use (&$seenIndices): void {
+                $seenIndices[] = $index;
+                $builder->uuidName();
+            })
+            ->saveTo($destDir)
+            ->process();
+
+        $this->assertTrue($batch->allSuccessful());
+        $this->assertSame([0, 1], $seenIndices);
+    }
 }
