@@ -1,11 +1,12 @@
 # Thư Viện PHP Upload Helper
 
-[📖 English Documentation](README.md)
+[English](README.md) | **Tiếng Việt**
 
-[![Phiên bản mới nhất](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/phatnt93/php-upload-helper)
-[![Phiên bản PHP](https://img.shields.io/badge/php-%3E%3D8.1-8892BF.svg)](https://php.net)
-[![Giấy phép: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Kiểm thử vượt qua](https://img.shields.io/badge/tests-59%20passed%20(185%20assertions)-brightgreen.svg)](tests)
+[![Phiên bản mới nhất trên Packagist](https://img.shields.io/packagist/v/phatnt93/php-upload-helper.svg?style=flat-square)](https://packagist.org/packages/phatnt93/php-upload-helper)
+[![Trạng thái GitHub Actions CI](https://img.shields.io/github/actions/workflow/status/phatnt93/php-upload-helper/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/phatnt93/php-upload-helper/actions)
+[![Phiên bản PHP](https://img.shields.io/packagist/dependency-v/phatnt93/php-upload-helper/php?style=flat-square)](https://packagist.org/packages/phatnt93/php-upload-helper)
+[![Giấy phép: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+[![Lượt tải về](https://img.shields.io/packagist/dt/phatnt93/php-upload-helper.svg?style=flat-square)](https://packagist.org/packages/phatnt93/php-upload-helper)
 
 Thư viện PHP xử lý tải lên tệp tin và thao tác hình ảnh hiện đại, an toàn và mượt mà với **hỗ trợ First-Class cho mảng upload nhiều tệp tin (Multi-File Arrays)**, lấy cảm hứng từ thư viện kinh điển [verot/class.upload.php](https://github.com/verot/class.upload.php).
 
@@ -48,9 +49,11 @@ Thư viện PHP xử lý tải lên tệp tin và thao tác hình ảnh hiện �
 9. [Đa Ngôn Ngữ (I18n) & Bảng Mã Lỗi Chuẩn Hóa](#9-đa-ngôn-ngữ-i18n-bảng-mã-lỗi-chuẩn-hóa)
 10. [Tiêu Chuẩn Bảo Mật Máy Chủ & Phòng Chống Mã Độc](#10-tiêu-chuẩn-bảo-mật-máy-chủ-phòng-chống-mã-độc)
 11. [Bảng Đối Chiếu Tính Năng Với verot/class.upload.php](#11-bảng-đối-chiếu-tính-năng-với-verotclassuploadphp)
-12. [Các Câu Hỏi Thường Gặp & Xử Lý Sự Cố (FAQ)](#12-các-câu-hỏi-thường-gặp-xử-lý-sự-cố-faq)
-13. [Kiểm Thử Tự Động](#13-kiểm-thử-tự-động)
-14. [Giấy Phép & Tác Giả](#14-giấy-phép-tác-giả)
+12. [Sử Dụng Với Các AI Coding Agents](#12-sử-dụng-với-các-ai-coding-agents)
+13. [Chữ Ký Callback & Hợp Đồng Mở Rộng](#13-chữ-ký-callback--hợp-đồng-mở-rộng)
+14. [Các Câu Hỏi Thường Gặp & Xử Lý Sự Cố (FAQ)](#14-các-câu-hỏi-thường-gặp-xử-lý-sự-cố-faq)
+15. [Kiểm Thử Tự Động & Chất Lượng Mã Nguồn](#15-kiểm-thử-tự-động--chất-lượng-mã-nguồn)
+16. [Giấy Phép & Tác Giả](#16-giấy-phép-tác-giả)
 ---
 
 ## 1. Tại sao nên chọn PHP Upload Helper?
@@ -69,16 +72,17 @@ Xử lý tải lên tệp tin trong PHP thuần luôn là bài toán phức tạ
 
 ## 2. Ưu Điểm Vượt Trội So Với `class.upload.php`
 
-| Tính năng | `verot/class.upload.php` | `phatnt93/php-upload-helper` |
-|---|---|---|
-| **Xử lý mảng Upload nhiều file** | ❌ Không có (Phải tự viết vòng lặp đảo ma trận) | 🟢 **Hỗ trợ First-Class native** cho mọi dạng mảng phẳng & lồng nhau |
-| **Tương thích PHP** | Class nguyên khối thời PHP 4/5/7/8 | 🟢 **PHP 8.1 - 8.4+** strict types, PER CS / PSR-12 |
-| **Kiến trúc mã nguồn** | Monolithic (~6,000 dòng trong 1 file duy nhất) | 🟢 **Action Pipeline hướng đối tượng**, phân tách SRP, SOLID chuẩn mực |
-| **Chiến lược bảo mật** | Blacklist lịch sử (dễ bị bypass CVE) | 🟢 **Strict Whitelist & Quét Magic Bytes nhị phân** |
-| **Làm sạch file SVG** | ❌ Dễ dính lỗ hổng Stored XSS | 🟢 **Tích hợp bộ lọc DOM XML khử script tự động** |
-| **Hoàn tác mẻ upload (Rollback)** | ❌ Không có (Để lại file rác khi có file lỗi) | 🟢 **Tự động xóa sạch file rác** khi batch gặp lỗi (`rollbackOnError`) |
-| **Nguồn dữ liệu đầu vào** | Hạn chế | 🟢 `$_FILES`, PSR-7, Base64 URI, Remote URL, File nội bộ |
-| **Trừu tượng hóa đồ họa** | Gọi trực tiếp hàm GD | 🟢 **Driver Abstraction** (GD mặc định, sẵn sàng Imagick) |
+| Tính năng | PHP thuần (`move_uploaded_file`) | `verot/class.upload.php` | `phatnt93/php-upload-helper` |
+|---|---|---|---|
+| **Xử lý mảng Upload nhiều file** | ❌ Không có (Phải tự viết vòng lặp đảo ma trận) | ❌ Không có (Phải tự viết vòng lặp đảo ma trận) | 🟢 **Hỗ trợ First-Class native** cho mọi dạng mảng phẳng & lồng nhau |
+| **Tương thích PHP** | Phụ thuộc phiên bản PHP cài đặt | Class nguyên khối thời PHP 4/5/7/8 | 🟢 **PHP 8.1 - 8.4+** strict types, PER CS / PSR-12 |
+| **Kiến trúc mã nguồn** | Các hàm thủ tục mức thấp | Monolithic (~6,000 dòng trong 1 file duy nhất) | 🟢 **Action Pipeline hướng đối tượng**, phân tách SRP, SOLID chuẩn mực |
+| **Xác thực MIME** | Tin cậy header `type` (không an toàn) | Blacklist & finfo cơ bản | 🟢 **Strict Whitelist & Quét Magic Bytes nhị phân** |
+| **Làm sạch file SVG** | ❌ Không có (Nguy cơ Stored XSS) | ❌ Dễ dính lỗ hổng Stored XSS | 🟢 **Tích hợp bộ lọc DOM XML khử script tự động** |
+| **Hoàn tác mẻ upload (Rollback)** | ❌ Phải tự unlink thủ công khi lỗi | ❌ Không có (Để lại file rác khi có file lỗi) | 🟢 **Tự động xóa sạch file rác** khi batch gặp lỗi (`rollbackOnError`) |
+| **Nguồn dữ liệu đầu vào** | Chỉ hỗ trợ `$_FILES` | Hạn chế | 🟢 `$_FILES`, PSR-7, Base64 URI, Remote URL, File nội bộ |
+| **Trừu tượng hóa đồ họa** | Code GD/Imagick thủ tục dài dòng | Gọi trực tiếp hàm GD | 🟢 **Driver Abstraction** (GD mặc định, sẵn sàng Imagick) |
+| **Bảo vệ an ninh máy chủ** | ❌ Lập trình viên tự chịu trách nhiệm | Cục bộ (Blacklist đuôi mở rộng) | 🟢 **Chống Pixel flood, SSRF guard, double-ext, null-byte** |
 
 ---
 
@@ -583,25 +587,24 @@ Gắn các hàm callback chặn (intercept) vào các mốc trong vòng đời x
 
 ```php
 Upload::file($_FILES['contract'])
-    ->beforeProcess(function ($uploadedFile) {
+    ->beforeProcess(function (UploadedFile $uploadedFile): void {
         // Chạy trước khi tiến hành kiểm tra & xử lý
         Log::info("Bắt đầu xử lý tải lên: " . $uploadedFile->getOriginalName());
     })
-    ->onSuccess(function ($processedFile, $result) {
+    ->onSuccess(function (ProcessedFile $processedFile): void {
         // Chỉ chạy khi toàn bộ quá trình upload thành công
         Database::recordUpload($processedFile->getFilename(), $processedFile->getSize());
         Notification::send("Tải lên thành công!");
     })
-    ->onError(function (string $errorMessage, string $errorCode, $result) {
+    ->onError(function (SingleResult $result): void {
         // Chạy khi vi phạm validation hoặc lỗi ghi đĩa
-        Log::warning("Tải lên thất bại [{$errorCode}]: {$errorMessage}");
+        Log::warning("Tải lên thất bại [{$result->getErrorCode()}]: {$result->getErrorMessage()}");
     })
-    ->afterProcess(function ($result) {
+    ->afterProcess(function (UploadedFile $uploadedFile): void {
         // Luôn luôn chạy khi kết thúc (dù thành công hay thất bại)
         Metrics::increment('uploads.attempted');
     })
     ->saveTo('/uploads/contracts');
-```
 
 
 ---
@@ -877,7 +880,47 @@ Toàn bộ thông điệp nằm trong [`src/I18n/en.php`](src/I18n/en.php) và [
 
 ---
 
-## 12. Các Câu Hỏi Thường Gặp & Xử Lý Sự Cố (FAQ)
+## 12. Sử Dụng Với Các AI Coding Agents
+
+Nếu bạn sử dụng các trợ lý lập trình AI (Claude Code, GitHub Copilot, Cursor, ChatGPT, Codex) trong dự án của mình, bạn có thể cung cấp các file ngữ cảnh tối ưu hóa cho AI:
+
+- **Tóm tắt nhanh cho LLM:** [`vendor/phatnt93/php-upload-helper/llms.txt`](llms.txt) (Tổng quan API và các đoạn mã mẫu phổ biến)
+- **Tài liệu kỹ thuật chuyên sâu:** [`vendor/phatnt93/php-upload-helper/llms-full.txt`](llms-full.txt) (Chữ ký đầy đủ của class, danh mục 100% mã lỗi, hợp đồng mở rộng)
+- **Mã mẫu độc lập chạy được:** [`examples/`](examples/) (Các script mẫu thực tế bao gồm upload đơn, hàng loạt, đa biến thể và bảo mật)
+
+### Mẫu Prompt cho File Quy Tắc Dự Án
+
+Thêm dòng sau vào file `.cursorrules`, `CLAUDE.md`, hoặc `AGENTS.md` trong dự án của bạn:
+
+> "Khi triển khai xử lý tải lên tệp tin hoặc xử lý hình ảnh trong PHP, hãy sử dụng thư viện `phatnt93/php-upload-helper`. Tra cứu file `vendor/phatnt93/php-upload-helper/llms.txt` để lấy mẫu Fluent API và các rule validation an toàn."
+
+---
+
+## 13. Chữ Ký Callback & Hợp Đồng Mở Rộng
+
+Mọi chữ ký callback trong `php-upload-helper` đều được định kiểu nghiêm ngặt (strictly typed) và cam kết tương thích ngược trong cùng phiên bản major:
+
+| Phương thức / Hook | Chữ ký Callback | Thời điểm & Mục đích |
+|---|---|---|
+| `variant(string $name, callable $configurator)` | `callable(UploadBuilder $builder): void` | Cấu hình pipeline cho một biến thể ảnh phái sinh |
+| `each(callable $callback)` (Batch) | `callable(UploadBuilder $builder, int $index, UploadedFile $file): void` | Cấu hình quy tắc riêng cho từng file trong batch |
+| `beforeProcess(callable $callback)` | `callable(UploadedFile $file): void` | Thực thi trước khi kiểm tra validation và chạy actions |
+| `afterProcess(callable $callback)` | `callable(UploadedFile $file): void` | Luôn thực thi sau khi pipeline xử lý xong |
+| `onSuccess(callable $callback)` | `callable(ProcessedFile $file): void` | Chỉ thực thi khi file đã được lưu thành công |
+| `onError(callable $callback)` | `callable(SingleResult $result): void` | Thực thi khi vi phạm validation hoặc lỗi ghi đĩa |
+| `name(Closure $custom)` | `Closure(UploadedFile $file): string` | Hàm sinh tên tệp tin tùy biến theo ngữ cảnh file |
+
+### Giao Diện Mở Rộng Tùy Chỉnh (Custom Extension Interfaces)
+
+Để mở rộng thư viện với logic riêng:
+- **Custom Action:** Implement `UploadHelper\Contracts\ActionInterface` (`getName(): string`, `execute(UploadedFile $file, ActionContext $context): UploadedFile`).
+- **Custom Scanner:** Implement `UploadHelper\Contracts\ScannerInterface` (`scan(string $filePath): bool`, `getThreatName(): ?string`).
+- **Custom Storage:** Implement `UploadHelper\Contracts\StorageInterface` (`save(...)`, `delete(...)`, `exists(...)`).
+- **Custom Image Driver:** Implement `UploadHelper\Contracts\ImageDriverInterface`.
+
+---
+
+## 14. Các Câu Hỏi Thường Gặp & Xử Lý Sự Cố (FAQ)
 
 ### Q: Tại sao siêu biến `$_FILES` bị rỗng hoặc gặp lỗi `UPLOAD_ERR_INI_SIZE` ngay lập tức?
 **A:** Do tệp tải lên vượt quá giá trị `upload_max_filesize` hoặc `post_max_size` trong file `php.ini`. Lưu ý rằng `post_max_size` luôn phải lớn hơn hoặc bằng `upload_max_filesize`. Khi tải lên nhiều file cùng lúc, `post_max_size` phải đủ lớn để chứa tổng dung lượng của toàn bộ các file trong mẻ.
@@ -891,41 +934,46 @@ php -r "var_dump(function_exists('imageavif'));"
 Nếu kết quả trả về `false`, hãy cài đặt thư viện `libwebp-dev` hoặc `libavif-dev` trên hệ điều hành và cài đặt lại extension GD cho PHP.
 
 ### Q: Làm thế nào để tạo cả ảnh xem trước lớn và ảnh thu nhỏ (thumbnail) từ cùng 1 file tải lên?
-**A:** Gọi phương thức `saveTo()` tuần tự hoặc tái sử dụng builder:
+**A:** Sử dụng pipeline đa biến thể tích hợp sẵn:
 ```php
-$uploader = Upload::file($_FILES['photo'])
-    ->allowedExtensions(['jpg', 'png', 'webp']);
-
-// 1. Lưu ảnh xem trước (800x600 fit):
-$previewResult = $uploader
+$result = Upload::file($_FILES['photo'])
+    ->allowedExtensions(['jpg', 'png', 'webp'])
+    ->resize(800, 600, mode: 'contain')
     ->prefix('preview_')
-    ->resize(800, 600, mode: 'fit')
-    ->saveTo('/uploads/gallery');
-
-// 2. Lưu ảnh thumbnail thu nhỏ (150x150 vuông):
-$thumbResult = $uploader
-    ->prefix('thumb_')
-    ->resize(150, 150, mode: 'crop')
+    ->variant('thumb', function ($v): void {
+        $v->resize(150, 150, mode: 'cover')
+            ->prefix('thumb_')
+            ->toWebp(quality: 80);
+    })
     ->saveTo('/uploads/gallery');
 ```
 
 ---
 
-## 13. Kiểm Thử Tự Động
+## 15. Kiểm Thử Tự Động & Chất Lượng Mã Nguồn
 
-Chạy toàn bộ bộ kiểm thử tự động thông qua PHPUnit:
+Chạy toàn bộ bộ kiểm thử tự động và phân tích tĩnh:
 
 ```bash
-# Chạy toàn bộ các bài test
-php codes/lib/vendor/bin/phpunit -c codes/lib/phpunit.xml.dist
+# Chạy toàn bộ các bài test PHPUnit
+composer test
 
-# Chạy với định dạng hiển thị chi tiết (testdox)
-php codes/lib/vendor/bin/phpunit -c codes/lib/phpunit.xml.dist --testdox
+# Phân tích tĩnh với PHPStan (Level 8)
+composer analyse
+
+# Kiểm tra định dạng mã nguồn (PER-CS 2.0)
+composer cs:check
+
+# Đo độ bao phủ kiểm thử (bắt buộc >= 90%)
+composer test:coverage
+
+# Chạy các file ví dụ độc lập
+for f in examples/*.php; do php "$f"; done
 ```
 
 ---
 
-## 14. Giấy Phép & Tác Giả
+## 16. Giấy Phép & Tác Giả
 
 - **Giấy phép:** Phát hành theo chuẩn [Giấy phép MIT](LICENSE).
 - **Tác giả:** [Phát Nguyễn](https://github.com/phatnt93) (`phatnt93@gmail.com`).

@@ -1,11 +1,12 @@
 # PHP Upload Helper
 
-[📖 Bản Tiếng Việt (Vietnamese Documentation)](README.vn.md)
+**English** | [Tiếng Việt](README.vi.md)
 
-[![Latest Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/phatnt93/php-upload-helper)
-[![PHP Version](https://img.shields.io/badge/php-%3E%3D8.1-8892BF.svg)](https://php.net)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests Passing](https://img.shields.io/badge/tests-59%20passed%20(185%20assertions)-brightgreen.svg)](tests)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/phatnt93/php-upload-helper.svg?style=flat-square)](https://packagist.org/packages/phatnt93/php-upload-helper)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/phatnt93/php-upload-helper/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/phatnt93/php-upload-helper/actions)
+[![PHP Version](https://img.shields.io/packagist/dependency-v/phatnt93/php-upload-helper/php?style=flat-square)](https://packagist.org/packages/phatnt93/php-upload-helper)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+[![Total Downloads](https://img.shields.io/packagist/dt/phatnt93/php-upload-helper.svg?style=flat-square)](https://packagist.org/packages/phatnt93/php-upload-helper)
 
 A modern, secure, and fluent PHP file upload and image processing library with **first-class multi-file array support**, inspired by the legendary [verot/class.upload.php](https://github.com/verot/class.upload.php).
 
@@ -48,9 +49,11 @@ A modern, secure, and fluent PHP file upload and image processing library with *
 9. [Internationalization & Error Codes Catalog](#9-internationalization-error-codes-catalog)
 10. [Security Best Practices & Server Hardening](#10-security-best-practices-server-hardening)
 11. [Feature Comparison with verot/class.upload.php](#11-feature-comparison-with-verotclassuploadphp)
-12. [FAQ & Troubleshooting](#12-faq-troubleshooting)
-13. [Automated Testing](#13-automated-testing)
-14. [License & Credits](#14-license-credits)
+12. [Using with AI Coding Agents](#12-using-with-ai-coding-agents)
+13. [Callback Signatures & Extension Contracts](#13-callback-signatures--extension-contracts)
+14. [FAQ & Troubleshooting](#14-faq--troubleshooting)
+15. [Automated Testing & Code Quality](#15-automated-testing--code-quality)
+16. [License & Credits](#16-license--credits)
 
 ---
 
@@ -70,16 +73,17 @@ Handling file uploads in native PHP is notorious for friction and security hazar
 
 ## 2. Key Advantages Over `class.upload.php`
 
-| Feature | `verot/class.upload.php` | `phatnt93/php-upload-helper` |
-|---|---|---|
-| **Multi-File Array Handling** | ❌ None (Requires manual matrix loops) | 🟢 **First-class native support** for flat & nested arrays |
-| **PHP Compatibility** | Legacy PHP 4/5/7/8 procedural class | 🟢 **PHP 8.1 - 8.4+** with strict types and PSR-4 |
-| **Architecture** | Monolithic (~6,000 lines single file) | 🟢 **Modular Action Pipeline** (SRP, clean SOLID design) |
-| **Security Strategy** | Historical Blacklist (bypass risks) | 🟢 **Strict Whitelist & Magic Bytes Sniffing** |
-| **SVG Sanitization** | ❌ Vulnerable to Stored XSS | 🟢 **Built-in XML/SVG script sanitizer** |
-| **Batch Rollback** | ❌ None (Leaves orphan files on failure) | 🟢 **All-or-nothing rollback** on failure (`rollbackOnError`) |
-| **Alternative Inputs** | Limited | 🟢 `$_FILES`, PSR-7, Base64 URI, Remote URL, Local path |
-| **Image Drivers** | Hardcoded GD calls | 🟢 **Driver Abstraction** (GD default, Imagick ready) |
+| Feature | Native PHP (`move_uploaded_file`) | `verot/class.upload.php` | `phatnt93/php-upload-helper` |
+|---|---|---|---|
+| **Multi-File Array Handling** | ❌ None (Requires manual matrix transposition) | ❌ None (Requires manual matrix loops) | 🟢 **First-class native support** for flat & nested arrays |
+| **PHP Compatibility** | Dependent on server PHP version | Legacy PHP 4/5/7/8 procedural class | 🟢 **PHP 8.1 - 8.4+** with strict types and PSR-4 |
+| **Architecture** | Low-level procedural primitives | Monolithic (~6,000 lines single file) | 🟢 **Modular Action Pipeline** (SRP, clean SOLID design) |
+| **MIME Validation** | Insecure client `type` header | Blacklist & basic finfo | 🟢 **Strict Whitelist & Magic Bytes Sniffing** |
+| **SVG Sanitization** | ❌ None (Stored XSS vulnerability) | ❌ Vulnerable to Stored XSS | 🟢 **Built-in XML/SVG script sanitizer** |
+| **Batch Rollback** | ❌ Manual file cleanup on error | ❌ None (Leaves orphan files on failure) | 🟢 **All-or-nothing rollback** on failure (`rollbackOnError`) |
+| **Alternative Inputs** | Limited to `$_FILES` | Limited | 🟢 `$_FILES`, PSR-7, Base64 URI, Remote URL, Local path |
+| **Image Drivers** | Procedural boilerplate | Hardcoded GD calls | 🟢 **Driver Abstraction** (GD default, Imagick ready) |
+| **Server Hardening** | ❌ Developer responsibility | Partial (Extension blacklists) | 🟢 **Pixel flood, SSRF guard, double-ext, null-byte** |
 
 ---
 
@@ -582,22 +586,21 @@ if ($result->isSuccess()) {
 ### Lifecycle Hooks & Event Callbacks
 Attach hooks to intercept and react during the upload lifecycle:
 
-```php
 Upload::file($_FILES['contract'])
-    ->beforeProcess(function ($uploadedFile) {
+    ->beforeProcess(function (UploadedFile $uploadedFile): void {
         // Runs before validation & processing
         Log::info("Starting upload for: " . $uploadedFile->getOriginalName());
     })
-    ->onSuccess(function ($processedFile, $result) {
+    ->onSuccess(function (ProcessedFile $processedFile): void {
         // Runs only when upload succeeded
         Database::recordUpload($processedFile->getFilename(), $processedFile->getSize());
         Notification::send("Upload complete!");
     })
-    ->onError(function (string $errorMessage, string $errorCode, $result) {
+    ->onError(function (SingleResult $result): void {
         // Runs when validation or processing failed
-        Log::warning("Upload failed [{$errorCode}]: {$errorMessage}");
+        Log::warning("Upload failed [{$result->getErrorCode()}]: {$result->getErrorMessage()}");
     })
-    ->afterProcess(function ($result) {
+    ->afterProcess(function (UploadedFile $uploadedFile): void {
         // Always runs after process finishes (success or failure)
         Metrics::increment('uploads.attempted');
     })
@@ -878,7 +881,47 @@ The full message catalog lives in [`src/I18n/en.php`](src/I18n/en.php) and [`src
 
 ---
 
-## 12. FAQ & Troubleshooting
+## 12. Using with AI Coding Agents
+
+If you use AI coding assistants (Claude Code, GitHub Copilot, Cursor, ChatGPT, Codex) in your project, you can provide them with machine-optimized context files:
+
+- **Quick LLM Guide:** [`vendor/phatnt93/php-upload-helper/llms.txt`](llms.txt) (API summary and common copy-paste recipes)
+- **Deep Technical Reference:** [`vendor/phatnt93/php-upload-helper/llms-full.txt`](llms-full.txt) (complete class signatures, 100% error catalog, extensibility interfaces)
+- **Standalone Examples:** [`examples/`](examples/) (executable reference scripts covering single file, batch upload, variants, and security)
+
+### Prompt Example for Your Project Rules
+
+Add this line to your project's `.cursorrules`, `CLAUDE.md`, or `AGENTS.md`:
+
+> "When implementing file uploads or image processing in PHP, use `phatnt93/php-upload-helper`. Refer to `vendor/phatnt93/php-upload-helper/llms.txt` for fluent API usage and validation recipes."
+
+---
+
+## 13. Callback Signatures & Extension Contracts
+
+All callback signatures in `php-upload-helper` are strictly typed and committed to backwards-compatibility within major versions:
+
+| Method / Hook | Callback Signature | Timing / Purpose |
+|---|---|---|
+| `variant(string $name, callable $configurator)` | `callable(UploadBuilder $builder): void` | Configures a derivative image variant pipeline |
+| `each(callable $callback)` (Batch) | `callable(UploadBuilder $builder, int $index, UploadedFile $file): void` | Configures per-file rules in a batch |
+| `beforeProcess(callable $callback)` | `callable(UploadedFile $file): void` | Executed prior to validation and pipeline actions |
+| `afterProcess(callable $callback)` | `callable(UploadedFile $file): void` | Executed after pipeline finishes |
+| `onSuccess(callable $callback)` | `callable(ProcessedFile $file): void` | Executed only when file is successfully saved |
+| `onError(callable $callback)` | `callable(SingleResult $result): void` | Executed when validation or processing fails |
+| `name(Closure $custom)` | `Closure(UploadedFile $file): string` | Custom dynamic filename generator |
+
+### Custom Extension Interfaces
+
+To extend the library with custom logic:
+- **Custom Actions:** Implement `UploadHelper\Contracts\ActionInterface` (`getName(): string`, `execute(UploadedFile $file, ActionContext $context): UploadedFile`).
+- **Custom Malware Scanners:** Implement `UploadHelper\Contracts\ScannerInterface` (`scan(string $filePath): bool`, `getThreatName(): ?string`).
+- **Custom Storage Backends:** Implement `UploadHelper\Contracts\StorageInterface` (`save(...)`, `delete(...)`, `exists(...)`).
+- **Custom Image Drivers:** Implement `UploadHelper\Contracts\ImageDriverInterface`.
+
+---
+
+## 14. FAQ & Troubleshooting
 
 ### Q: Why do I get an empty `$_FILES` or immediate `UPLOAD_ERR_INI_SIZE`?
 **A:** The file exceeds either `upload_max_filesize` or `post_max_size` in your active `php.ini`. Note that `post_max_size` must always be larger than or equal to `upload_max_filesize`. For multi-file uploads, `post_max_size` must be large enough to contain the sum of all files in the batch request.
@@ -892,41 +935,46 @@ php -r "var_dump(function_exists('imageavif'));"
 If `false`, install `libwebp-dev` or `libavif-dev` and recompile/install the PHP GD extension.
 
 ### Q: How do I create both a large preview and a small thumbnail from the same uploaded file?
-**A:** Call `saveTo()` sequentially or execute actions in pipeline:
+**A:** Use the built-in multi-variant pipeline:
 ```php
-$uploader = Upload::file($_FILES['photo'])
-    ->allowedExtensions(['jpg', 'png', 'webp']);
-
-// 1. Save web preview (800x600):
-$previewResult = $uploader
+$result = Upload::file($_FILES['photo'])
+    ->allowedExtensions(['jpg', 'png', 'webp'])
+    ->resize(800, 600, mode: 'contain')
     ->prefix('preview_')
-    ->resize(800, 600, mode: 'fit')
-    ->saveTo('/uploads/gallery');
-
-// 2. Save thumbnail (150x150 crop):
-$thumbResult = $uploader
-    ->prefix('thumb_')
-    ->resize(150, 150, mode: 'crop')
+    ->variant('thumb', function ($v): void {
+        $v->resize(150, 150, mode: 'cover')
+            ->prefix('thumb_')
+            ->toWebp(quality: 80);
+    })
     ->saveTo('/uploads/gallery');
 ```
 
 ---
 
-## 13. Automated Testing
+## 15. Automated Testing & Code Quality
 
-Run the automated test suite via PHPUnit:
+Run the automated quality and test suites:
 
 ```bash
-# Run all unit and integration tests
-php codes/lib/vendor/bin/phpunit -c codes/lib/phpunit.xml.dist
+# Run PHPUnit tests
+composer test
 
-# Run with testdox format
-php codes/lib/vendor/bin/phpunit -c codes/lib/phpunit.xml.dist --testdox
+# Run PHPStan static analysis (Level 8)
+composer analyse
+
+# Check code formatting (PER-CS 2.0)
+composer cs:check
+
+# Measure test line coverage (enforces >= 90%)
+composer test:coverage
+
+# Run standalone examples
+for f in examples/*.php; do php "$f"; done
 ```
 
 ---
 
-## 14. License & Credits
+## 16. License & Credits
 
 - **License:** Licensed under the [MIT License](LICENSE).
 - **Author:** [Phat Nguyen](https://github.com/phatnt93) (`phatnt93@gmail.com`).

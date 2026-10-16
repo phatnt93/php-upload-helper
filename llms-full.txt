@@ -1,0 +1,357 @@
+# phatnt93/php-upload-helper — Full Technical Specification & Deep Context
+
+> Package: `phatnt93/php-upload-helper`  
+> Namespace: `UploadHelper\`  
+> PHP Requirement: `^8.1` (tested on 8.1, 8.2, 8.3, 8.4)  
+> Coding Standards: PER Coding Style 2.0 / PSR-12, `declare(strict_types=1)` on every file  
+> Default Locale: `en` (fallback: `en`, supported: `en`, `vi`)
+
+---
+
+## 1. Architecture Overview
+
+The library is organized into clean, single-responsibility modules under `src/`:
+- `Contracts/`: Interfaces for actions, image drivers, scanners, storage, validators, results.
+- `Core/`: Normalization (`UploadNormalizer`), uploaded file abstraction (`UploadedFile`), pipeline execution (`ActionPipeline`, `ActionContext`), builders (`UploadBuilder`, `BatchUploadBuilder`), collections (`FileCollection`), and value objects (`ProcessedFile`).
+- `Drivers/`: Image processing backends (`GdDriver` implementing `ImageDriverInterface`).
+- `Exceptions/`: Strongly-typed exceptions with named constructors (`UploadException`, `ValidationException`, `SecurityException`, `InvalidLocaleException`, `ImageProcessingException`).
+- `I18n/`: Translation catalog (`Translator`, `en.php`, `vi.php`).
+- `Remote/`: SSRF-safe URL downloading (`UrlDownloader`).
+- `Results/`: Result wrappers (`SingleResult`, `BatchResult`).
+- `Storage/`: Filesystem drivers (`LocalStorage`, `DirectoryHardener`, `RollbackManager`).
+- `Validation/`: Binary MIME detection (`MimeSniffer`), extension whitelisting (`ExtensionGuard`), size validation (`SizeValidator`), dimension constraints (`DimensionValidator`), SVG sanitization (`SvgSanitizer`), pixel flood guard (`PixelFloodGuard`), PDF/Office validators (`DocumentSecurityValidator`), SSRF protection (`SsrfGuard`), and malware scanner integration (`ClamAvScanner`).
+
+---
+
+## 2. Factory Entry Points: `UploadHelper\Upload`
+
+```php
+namespace UploadHelper;
+
+class Upload
+{
+    // Single file from $_FILES['field'], UploadedFile, or string path
+    public static function file(mixed $input): UploadBuilder;
+
+    // Batch of files from $_FILES['photos'], nested arrays, or list of UploadedFile
+    public static function files(mixed $input): BatchUploadBuilder;
+
+    // Direct read of superglobal $_FILES with automatic restructuring
+    public static function fromGlobals(?array $files = null): BatchUploadBuilder;
+
+    // Create upload from an existing local filesystem path
+    public static function fromPath(string $localFilePath, ?string $filename = null): UploadBuilder;
+
+    // Create upload from Base64 Data URI ('data:image/png;base64,...') or raw base64 string
+    public static function fromBase64(string $base64String, ?string $filename = null): UploadBuilder;
+
+    // Download and process remote file safely (SSRF protection, IP pinning, per-hop redirect checks)
+    public static function fromUrl(
+        string $url,
+        ?string $filename = null,
+        int $timeout = 15,
+        int $maxDownloadBytes = 52_428_800,
+        bool $allowPrivateIp = false,
+        int $maxRedirects = 3
+    ): UploadBuilder;
+
+    // Integrate with PSR-7 UploadedFileInterface (single object or list)
+    public static function fromPsr7(object|array $psr7Input): UploadBuilder|BatchUploadBuilder;
+}
+```
+
+---
+
+## 3. Builder API: `UploadHelper\Core\UploadBuilder`
+
+### 3.1 Validation Methods
+- `allowedExtensions(array<int, string> $extensions): self`  
+  Case-insensitive whitelist. Strips leading dots. Blocks dangerous extensions (`.php`, `.phtml`, `.phar`, `.sh`, `.exe`, etc.), double extensions (`shell.php.png`), and null bytes (`\0`, `%00`).
+- `allowedMimes(array<int, string> $mimes): self`  
+  Validates MIME against binary magic bytes and `finfo`, never trusting `$_FILES['type']`.
+- `maxSize(int|string|null $maxSize): self`  
+  Accepts integer bytes or human strings: `'2M'`, `'500K'`, `'1G'`.
+- `minSize(int|string|null $minSize): self`  
+  Minimum required file size.
+- `dimension(int $width, int $height): self`  
+  Exact required image width and height.
+- `dimensionBetween(?int $minW, ?int $minH, ?int $maxW, ?int $maxH): self`  
+  Constrains width/height ranges.
+- `exactDimension(int $width, int $height): self`  
+  Alias for `dimension()`.
+- `aspectRatio(float|string $ratio, float $tolerance = 0.05): self`  
+  Accepts ratio as string (`'16:9'`, `'4/3'`) or float (`1.777`).
+- `maxPixels(?int $maxPixels): self`  
+  Pixel flood guard threshold (e.g. `10_000_000` pixels).
+- `maxImageMemory(int|string|null $maxMemory): self`  
+  Decompression memory guard threshold (e.g. `'64M'`).
+- `sanitizeSvg(bool $sanitize = true): self`  
+  Cleans SVG uploads by removing `<script>`, `<foreignobject>`, `<iframe>`, `<object>`, `<embed>`, inline `on*` event handlers, and `javascript:` URIs via DOMDocument.
+- `blockPdfJavaScript(bool $block = true): self`  
+  Rejects PDF files containing `/JavaScript`, `/JS`, `/Launch`, or `/EmbeddedFiles`.
+- `blockOfficeMacros(bool $block = true): self`  
+  Rejects Office documents (`.docx`, `.xlsx`, `.pptx`) containing VBA macros (`vbaProject.bin`).
+- `scanner(ScannerInterface $scanner): self`  
+  Integrates malware scanners such as `ClamAvScanner`.
+
+### 3.2 Naming Strategies
+- `slugName(): self`  
+  Transliterates Vietnamese accents and converts non-alphanumeric chars to kebab-case slug.
+- `uuidName(): self`  
+  Generates UUIDv4 filename (e.g. `f47ac10b-58cc-4372-a567-0e02b2c3d479`).
+- `randomName(int $length = 16): self`  
+  Generates random hex string of given length.
+- `timestampName(): self`  
+  Generates timestamp-based filename (`Ymd_His_<random>`).
+- `hashName(string $algo = 'sha256', int $length = 64): self`  
+  Generates cryptographic hash of file contents.
+- `sha256Name(int $length = 64): self`  
+  Shortcut for `hashName('sha256', $length)`.
+- `name(string|Closure(UploadedFile): string $name): self`  
+  Custom static string or closure generator.
+- `prefix(string $prefix): self`  
+  Prepends prefix to filename.
+- `suffix(string $suffix): self`  
+  Appends suffix before file extension.
+
+### 3.3 Storage Options
+- `destination(string $destinationDir, int $chmod = 0755): self`  
+  Sets target directory and permission mask. Automatically creates missing directory with `0755`.
+- `overwrite(bool $overwrite = true): self`  
+  Controls whether existing files are replaced.
+- `autoIncrement(bool $autoIncrement = true): self`  
+  Appends counter (`_1`, `_2`) if destination filename already exists.
+- `hardenDestination(bool $harden = true): self`  
+  Creates `.htaccess` in target directory preventing script execution.
+- `storage(StorageInterface $storage): self`  
+  Plugs in custom storage implementation (defaults to `LocalStorage`).
+
+### 3.4 Image Manipulation
+- `resize(int $width, int $height, string $mode = 'contain', bool $allowEnlarge = false): self`  
+  Modes:
+  - `'contain'`: Scales proportionally so image fits within bounding box without cropping.
+  - `'cover'`: Scales and center-crops so image completely covers target dimensions.
+  - `'fill'`: Forces exact dimensions without preserving aspect ratio (stretches).
+  - `'pad'`: Scales proportionally and pads borders with background color.
+  - `'crop'`: Alias for `'cover'`.
+- `crop(int $width, int $height, ?int $x = null, ?int $y = null, string $position = 'center'): self`  
+  Positions: `'center'`, `'top-left'`, `'top'`, `'top-right'`, `'bottom-left'`, `'bottom'`, `'bottom-right'`.
+- `rotate(float $angle, int $bgColor = 0): self`  
+  Rotates image by specified degrees (counter-clockwise).
+- `flip(string $mode = 'both'): self`  
+  Modes: `'horizontal'`, `'vertical'`, `'both'`.
+- `watermarkImage(string $watermarkPath, string $position = 'bottom-right', int $opacity = 100, int $offsetX = 10, int $offsetY = 10): self`  
+  Overlays PNG/JPEG watermark with configurable position, opacity (0-100), and offsets.
+- `watermarkText(string $text, int $fontSize = 12, int $color = 0xFFFFFF, string $position = 'bottom-right', ?string $fontPath = null, int $offsetX = 10, int $offsetY = 10): self`  
+  Overlays text watermark using TTF font or built-in GD font.
+- `stripExif(): self`  
+  Strips all EXIF, GPS, IPTC, and XMP metadata by re-encoding through image driver.
+- `autoOrient(): self`  
+  Automatically rotates image according to EXIF orientation tag before processing.
+
+### 3.5 Format Conversion & Filters
+- `toWebp(int $quality = 85): self`
+- `toJpeg(int $quality = 85): self`
+- `toPng(): self`
+- `toAvif(int $quality = 80): self`
+- `grayscale(): self`
+- `brightness(int $level): self` (range -255 to 255)
+- `contrast(int $level): self` (range -100 to 100)
+- `blur(int $passes = 1): self`
+- `sharpen(): self`
+- `invert(): self`
+- `sepia(): self`
+- `pixelate(int $blockSize = 10): self`
+
+### 3.6 Variants & Lifecycle Hooks
+- `variant(string $name, callable(UploadBuilder): void $configurator): self`  
+  Registers a child variant (e.g. `'thumb'`, `'preview'`) derived from the same source file.
+- `beforeProcess(callable(UploadedFile): void $callback): self`
+- `afterProcess(callable(UploadedFile): void $callback): self`
+- `onSuccess(callable(ProcessedFile): void $callback): self`
+- `onError(callable(SingleResult): void $callback): self`
+
+### 3.7 Execution
+- `process(): SingleResult`  
+  Executes validation, actions, and variants. Never throws uncaught exceptions; errors are returned within `SingleResult`.
+- `saveTo(string $destinationDir, int $chmod = 0755): SingleResult`  
+  Shorthand for `destination($dir, $chmod)->process()`.
+
+---
+
+## 4. Batch Processing: `UploadHelper\Core\BatchUploadBuilder`
+
+- `allowedExtensions(array $extensions): self`
+- `allowedMimes(array $mimes): self`
+- `maxSize(int|string|null $maxSize): self`
+- `minSize(int|string|null $minSize): self`
+- `rollbackOnError(bool $rollback = true): self`  
+  When enabled, if any file in the batch fails, all files uploaded in this batch are deleted.
+- `each(callable(UploadBuilder, int, UploadedFile): void $callback): self`  
+  Configures per-file rules or actions.
+- `destination(string $destinationDir, int $chmod = 0755): self`
+- `saveTo(string $destinationDir, int $chmod = 0755): self`
+- `process(): BatchResult`
+
+---
+
+## 5. Result Value Objects
+
+### 5.1 `SingleResult`
+- `isSuccess(): bool`
+- `getFile(): ?ProcessedFile`
+- `getVariant(string $name): ?ProcessedFile`
+- `getVariants(): array<string, ProcessedFile>`
+- `getErrorMessage(): ?string`
+- `getErrorCode(): ?string`
+- `getContext(): array<string, mixed>`
+
+### 5.2 `BatchResult`
+- `allSuccessful(): bool`
+- `isSuccess(): bool` (alias for `allSuccessful`)
+- `hasFailures(): bool`
+- `getSuccessful(): array<int, ProcessedFile>`
+- `getFailed(): array<int, SingleResult>`
+- `count(): int`
+
+### 5.3 `ProcessedFile`
+- `getFilename(): string`
+- `getSavedPath(): string`
+- `getOriginalName(): string`
+- `getMime(): string`
+- `getExtension(): string`
+- `getSize(): int`
+- `getFormattedSize(): string`
+- `getWidth(): ?int`
+- `getHeight(): ?int`
+- `getDimensions(): ?array{width: int, height: int}`
+- `getSha256(): string`
+- `toArray(): array<string, mixed>`
+
+---
+
+## 6. Complete Error Code Catalog
+
+All error codes are defined in `src/I18n/en.php` and `src/I18n/vi.php`:
+
+| Error Code | English Message Template | Context Keys |
+|---|---|---|
+| `ERR_NO_FILE` | No file was provided for upload. | |
+| `ERR_PROCESS_FAILED` | File processing failed. | |
+| `ERR_INTERNAL` | An unexpected error occurred while processing the file. | |
+| `ERR_FILE_NOT_FOUND` | Source file could not be found. | |
+| `ERR_FILE_NOT_READABLE` | Source file is not readable. | |
+| `ERR_SAVE_FAILED` | Failed to save file to destination: {path}. | `{path}` |
+| `ERR_FILE_EXISTS` | File already exists at destination: {path}. | `{path}` |
+| `ERR_DESTINATION_NOT_CONFIGURED` | Destination directory is not configured. | |
+| `ERR_DESTINATION_INVALID` | Destination directory is invalid or could not be created: {path}. | `{path}` |
+| `ERR_UPLOAD_INI_SIZE` | File size exceeds upload_max_filesize directive in php.ini. | `{filename}`, `{upload_error}` |
+| `ERR_UPLOAD_FORM_SIZE` | File size exceeds MAX_FILE_SIZE directive specified in HTML form. | `{filename}`, `{upload_error}` |
+| `ERR_UPLOAD_PARTIAL` | The file was only partially uploaded. | `{filename}`, `{upload_error}` |
+| `ERR_UPLOAD_NO_FILE` | No file was uploaded. | `{filename}`, `{upload_error}` |
+| `ERR_UPLOAD_NO_TMP_DIR` | Missing a temporary folder on the server. | `{filename}`, `{upload_error}` |
+| `ERR_UPLOAD_CANT_WRITE` | Failed to write file to disk. | `{filename}`, `{upload_error}` |
+| `ERR_UPLOAD_EXTENSION` | A PHP extension stopped the file upload. | `{filename}`, `{upload_error}` |
+| `ERR_UPLOAD_UNKNOWN` | Unknown upload error occurred (code: {upload_error}). | `{filename}`, `{upload_error}` |
+| `ERR_SECURITY_DANGEROUS_EXTENSION` | The file extension .{extension} is forbidden for security reasons. | `{filename}`, `{extension}` |
+| `ERR_SECURITY_DOUBLE_EXTENSION` | Malicious double extension .{dangerous_sub_ext} detected in filename: {filename}. | `{filename}`, `{dangerous_sub_ext}` |
+| `ERR_SECURITY_NULL_BYTE` | Malicious null-byte detected in filename: {filename}. | `{filename}` |
+| `ERR_SECURITY_PATH_TRAVERSAL` | Path traversal sequence detected in filename: {filename}. | `{filename}` |
+| `ERR_PATH_TRAVERSAL` | Path traversal sequence detected in filename: {filename}. | `{filename}` |
+| `ERR_EXTENSION_NOT_ALLOWED` | File extension .{extension} is not allowed. Allowed extensions: {allowed}. | `{filename}`, `{extension}`, `{allowed}` |
+| `ERR_MIME_NOT_ALLOWED` | File MIME type ({detected_mime}) is not allowed. Allowed MIME types: {allowed_mimes}. | `{filename}`, `{detected_mime}`, `{allowed_mimes}` |
+| `ERR_FILE_TOO_LARGE` | File size ({formatted_actual}) exceeds the maximum allowed limit ({formatted_max}). | `{filename}`, `{actual_bytes}`, `{max_bytes}`, `{formatted_actual}`, `{formatted_max}` |
+| `ERR_FILE_TOO_SMALL` | File size ({formatted_actual}) is smaller than the minimum required size ({formatted_min}). | `{filename}`, `{actual_bytes}`, `{min_bytes}`, `{formatted_actual}`, `{formatted_min}` |
+| `ERR_NOT_AN_IMAGE` | The file is not a valid image or could not be decoded. | `{filename}` |
+| `ERR_DIMENSION_MIN_WIDTH` | Image width ({width}px) is less than the required minimum ({min_width}px). | `{filename}`, `{width}`, `{min_width}` |
+| `ERR_DIMENSION_MAX_WIDTH` | Image width ({width}px) exceeds the allowed maximum ({max_width}px). | `{filename}`, `{width}`, `{max_width}` |
+| `ERR_DIMENSION_MIN_HEIGHT` | Image height ({height}px) is less than the required minimum ({min_height}px). | `{filename}`, `{height}`, `{min_height}` |
+| `ERR_DIMENSION_MAX_HEIGHT` | Image height ({height}px) exceeds the allowed maximum ({max_height}px). | `{filename}`, `{height}`, `{max_height}` |
+| `ERR_DIMENSION_EXACT_WIDTH` | Image width ({width}px) does not match the required exact width ({exact_width}px). | `{filename}`, `{width}`, `{exact_width}` |
+| `ERR_DIMENSION_EXACT_HEIGHT` | Image height ({height}px) does not match the required exact height ({exact_height}px). | `{filename}`, `{height}`, `{exact_height}` |
+| `ERR_DIMENSION_RATIO` | Image aspect ratio ({actual_ratio}) does not match the required ratio ({expected_ratio}). | `{filename}`, `{actual_ratio}`, `{expected_ratio}` |
+| `ERR_PIXEL_FLOOD_LIMIT` | Image resolution or decompression memory ({megapixels} MP, ~{memory_mb} MB) exceeds safe limits. | `{megapixels}`, `{memory_mb}` |
+| `ERR_SVG_DANGEROUS_CONTENT` | SVG file contains potentially dangerous script content and could not be sanitized safely. | `{file}` |
+| `ERR_PDF_JAVASCRIPT_DETECTED` | PDF contains embedded JavaScript which is forbidden: {file}. | `{file}` |
+| `ERR_PDF_LAUNCH_DETECTED` | PDF contains an embedded /Launch action which is forbidden: {file}. | `{file}` |
+| `ERR_PDF_EMBEDDED_FILES_DETECTED` | PDF contains embedded executable files which are forbidden: {file}. | `{file}` |
+| `ERR_OFFICE_MACRO_DETECTED` | Office document contains embedded VBA macros which are forbidden: {file}. | `{file}` |
+| `ERR_VIRUS_DETECTED` | File is infected with malware ({threat}): {filename}. | `{filename}`, `{threat}` |
+| `ERR_SCANNER_ERROR` | Virus scanner encountered an error: {message}. | `{message}` |
+| `ERR_SSRF_INVALID_URL` | Malformed or unsupported URL: {url}. | `{url}` |
+| `ERR_SSRF_DISALLOWED_SCHEME` | URL scheme is not allowed: {scheme}. | `{url}`, `{scheme}` |
+| `ERR_SSRF_DISALLOWED_PORT` | URL port is not allowed: {port}. | `{url}`, `{port}` |
+| `ERR_SSRF_DNS_RESOLVE_FAILED` | Failed to resolve DNS for host: {host}. | `{url}`, `{host}` |
+| `ERR_SSRF_PRIVATE_IP_BLOCKED` | Remote URL points to private or restricted network address (SSRF blocked). | `{url}`, `{ip}` |
+| `ERR_BASE64_INVALID` | Base64 payload is invalid or corrupted. | |
+| `ERR_PSR7_INVALID` | Input is not a PSR-7 UploadedFileInterface instance or a list of them. | |
+
+---
+
+## 7. Extensibility Interfaces
+
+### `UploadHelper\Contracts\ActionInterface`
+```php
+namespace UploadHelper\Contracts;
+
+use UploadHelper\Core\ActionContext;
+use UploadHelper\Core\UploadedFile;
+
+interface ActionInterface
+{
+    public function getName(): string;
+    public function execute(UploadedFile $file, ActionContext $context): UploadedFile;
+}
+```
+
+### `UploadHelper\Contracts\ScannerInterface`
+```php
+namespace UploadHelper\Contracts;
+
+interface ScannerInterface
+{
+    public function scan(string $filePath): bool; // true if clean, false if infected
+    public function getThreatName(): ?string;
+}
+```
+
+### `UploadHelper\Contracts\StorageInterface`
+```php
+namespace UploadHelper\Contracts;
+
+use UploadHelper\Core\UploadedFile;
+
+interface StorageInterface
+{
+    public function save(
+        UploadedFile $file,
+        string $destinationDir,
+        string $targetFilename,
+        bool $overwrite = false,
+        int $chmod = 0755
+    ): string;
+
+    public function delete(string $filePath): bool;
+    public function exists(string $filePath): bool;
+}
+```
+
+### `UploadHelper\Contracts\ImageDriverInterface`
+```php
+namespace UploadHelper\Contracts;
+
+interface ImageDriverInterface
+{
+    public function isAvailable(): bool;
+    public function load(string $filePath): ImageResourceInterface;
+    public function create(int $width, int $height, int|string $bgColor = 0): ImageResourceInterface;
+    public function save(ImageResourceInterface $resource, string $outputPath, string $format = 'jpeg', int $quality = 85): bool;
+    public function resize(ImageResourceInterface $resource, int $targetWidth, int $targetHeight, string $mode = 'contain', bool $allowEnlarge = false): ImageResourceInterface;
+    public function crop(ImageResourceInterface $resource, int $width, int $height, ?int $x = null, ?int $y = null, string $position = 'center'): ImageResourceInterface;
+    public function rotate(ImageResourceInterface $resource, float $angle, int|string $bgColor = 0): ImageResourceInterface;
+    public function flip(ImageResourceInterface $resource, string $mode = 'both'): ImageResourceInterface;
+    public function watermarkImage(ImageResourceInterface $resource, ImageResourceInterface $watermark, string $position = 'bottom-right', int $opacity = 100, int $offsetX = 10, int $offsetY = 10): ImageResourceInterface;
+    public function watermarkText(ImageResourceInterface $resource, string $text, int $fontSize = 12, int|string $color = 0xFFFFFF, string $position = 'bottom-right', ?string $fontPath = null, int $offsetX = 10, int $offsetY = 10): ImageResourceInterface;
+    public function filter(ImageResourceInterface $resource, string $filterType, array $args = []): ImageResourceInterface;
+}
+```

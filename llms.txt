@@ -1,0 +1,127 @@
+# phatnt93/php-upload-helper
+
+> A modern, secure, and fluent PHP 8.1+ file upload and image processing library with first-class multi-file array normalization, binary magic bytes MIME validation, SVG sanitization, and atomic batch rollback.
+
+For complete API specifications and error catalogs, see:
+- Full API Reference: [llms-full.txt](llms-full.txt)
+- Working Standalone Examples: [examples/](examples/)
+- Human Documentation: [README.md](README.md) | [README.vi.md](README.vi.md)
+
+---
+
+## Quick Recipes
+
+### 1. Single File Upload with Validation & Image Pipeline
+```php
+use UploadHelper\Upload;
+
+$result = Upload::file($_FILES['avatar'])
+    ->allowedExtensions(['png', 'jpg', 'jpeg', 'webp'])
+    ->allowedMimes(['image/png', 'image/jpeg', 'image/webp'])
+    ->maxSize('5M')
+    ->resize(200, 200, 'cover')
+    ->toWebp(quality: 85)
+    ->slugName()
+    ->prefix('user_')
+    ->saveTo('/var/www/uploads/avatars');
+
+if ($result->isSuccess()) {
+    $file = $result->getFile();
+    echo $file->getFilename();   // e.g. "user_my-avatar.webp"
+    echo $file->getSavedPath();  // e.g. "/var/www/uploads/avatars/user_my-avatar.webp"
+} else {
+    echo $result->getErrorMessage();
+}
+```
+
+### 2. Multi-File Batch Upload with Atomic Rollback
+```php
+use UploadHelper\Upload;
+
+$batch = Upload::files($_FILES['photos'])
+    ->allowedExtensions(['jpg', 'jpeg', 'png'])
+    ->maxSize('10M')
+    ->rollbackOnError(true) // deletes all saved files if any file fails
+    ->each(function ($builder): void {
+        $builder->uuidName()
+            ->resize(800, 600, 'contain')
+            ->toWebp();
+    })
+    ->destination('/var/www/uploads/gallery')
+    ->process();
+
+if ($batch->allSuccessful()) {
+    foreach ($batch->getSuccessful() as $processed) {
+        echo $processed->getFilename() . PHP_EOL;
+    }
+} else {
+    echo "Failed files: " . count($batch->getFailed());
+}
+```
+
+### 3. Multi-Variant Pipeline (Main + Thumbnail)
+```php
+$result = Upload::file($_FILES['photo'])
+    ->resize(1200, 800, 'contain')
+    ->toJpeg(85)
+    ->randomName(16)
+    ->variant('thumb', function ($v): void {
+        $v->resize(150, 150, 'cover')
+            ->suffix('_thumb')
+            ->toWebp(80);
+    })
+    ->saveTo('/var/www/uploads');
+
+$main = $result->getFile();
+$thumb = $result->getVariant('thumb');
+```
+
+### 4. Direct Superglobal $_FILES Handling (Nested Arrays)
+```php
+// Handles deeply nested $_FILES automatically (e.g. items[0][photos][])
+$batch = Upload::fromGlobals()
+    ->allowedExtensions(['jpg', 'png', 'pdf'])
+    ->maxSize('5M')
+    ->saveTo('/var/www/uploads')
+    ->process();
+```
+
+### 5. Alternative Inputs (Base64, Local Path, PSR-7, SSRF-Safe Remote URL)
+```php
+// Base64 Data URI
+$builder = Upload::fromBase64('data:image/png;base64,...', 'photo.png');
+
+// Local Server File
+$builder = Upload::fromPath('/tmp/cached_download.jpg');
+
+// PSR-7 UploadedFileInterface
+$builder = Upload::fromPsr7($request->getUploadedFiles()['avatar']);
+
+// Remote URL (SSRF-protected, IP-pinned, per-hop redirect checked)
+$builder = Upload::fromUrl('https://example.com/image.jpg', maxDownloadBytes: 10_000_000);
+```
+
+### 6. Internationalization (i18n)
+```php
+use UploadHelper\I18n\Translator;
+
+Translator::setLocale('vi'); // Default is 'en'
+// Error messages will now be rendered in Vietnamese.
+```
+
+---
+
+## Core Classes & Methods
+
+- `UploadHelper\Upload`: Factory entry point (`file`, `files`, `fromGlobals`, `fromPath`, `fromBase64`, `fromUrl`, `fromPsr7`).
+- `UploadHelper\Core\UploadBuilder`: Fluent builder for single files.
+  - Validation: `allowedExtensions`, `allowedMimes`, `maxSize`, `minSize`, `dimension`, `dimensionBetween`, `aspectRatio`, `exactDimension`, `maxPixels`, `maxImageMemory`, `sanitizeSvg`, `blockPdfJavaScript`, `blockOfficeMacros`, `scanner`.
+  - Naming: `slugName`, `uuidName`, `randomName`, `timestampName`, `hashName`, `sha256Name`, `name`, `prefix`, `suffix`.
+  - Image actions: `resize`, `crop`, `rotate`, `flip`, `watermarkImage`, `watermarkText`, `toWebp`, `toJpeg`, `toPng`, `toAvif`, `grayscale`, `brightness`, `contrast`, `blur`, `sharpen`, `invert`, `sepia`, `pixelate`.
+  - Variants & hooks: `variant`, `beforeProcess`, `afterProcess`, `onSuccess`, `onError`.
+  - Execution: `saveTo($dir, $chmod)`, `process()`.
+- `UploadHelper\Core\BatchUploadBuilder`: Fluent builder for file collections.
+  - Methods: `allowedExtensions`, `allowedMimes`, `maxSize`, `minSize`, `rollbackOnError`, `each`, `destination`, `saveTo`, `process`.
+- `UploadHelper\Results\SingleResult`: Result of single upload (`isSuccess`, `getFile`, `getVariant`, `getErrorMessage`, `getErrorCode`).
+- `UploadHelper\Results\BatchResult`: Result of batch upload (`allSuccessful`, `hasFailures`, `getSuccessful`, `getFailed`, `count`).
+- `UploadHelper\Core\ProcessedFile`: Value object of saved file (`getFilename`, `getSavedPath`, `getMime`, `getExtension`, `getSize`, `getFormattedSize`, `getDimensions`, `getSha256`).
