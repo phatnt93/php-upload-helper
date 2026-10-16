@@ -117,7 +117,7 @@ Translator::setLocale('vi'); // Default is 'en'
 - `UploadHelper\Core\UploadBuilder`: Fluent builder for single files.
   - Validation: `allowedExtensions`, `allowedMimes`, `maxSize`, `minSize`, `dimension`, `dimensionBetween`, `aspectRatio`, `exactDimension`, `maxPixels`, `maxImageMemory`, `sanitizeSvg`, `blockPdfJavaScript`, `blockOfficeMacros`, `scanner`.
   - Naming: `slugName`, `uuidName`, `randomName`, `timestampName`, `hashName`, `sha256Name`, `name`, `prefix`, `suffix`.
-  - Image actions: `resize`, `crop`, `rotate`, `flip`, `watermarkImage`, `watermarkText`, `toWebp`, `toJpeg`, `toPng`, `toAvif`, `grayscale`, `brightness`, `contrast`, `blur`, `sharpen`, `invert`, `sepia`, `pixelate`.
+  - Image actions: `resize`, `crop`, `rotate`, `flip`, `watermarkImage`, `watermarkText`, `toWebp`, `toJpeg`, `toPng`, `toAvif`, `grayscale`, `brightness`, `contrast`, `blur`, `sharpen`, `invert`.
   - Variants & hooks: `variant`, `beforeProcess`, `afterProcess`, `onSuccess`, `onError`.
   - Execution: `saveTo($dir, $chmod)`, `process()`.
 - `UploadHelper\Core\BatchUploadBuilder`: Fluent builder for file collections.

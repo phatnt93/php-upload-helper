@@ -115,6 +115,29 @@ class UploadBuilder
         return $this;
     }
 
+    public function dimension(int $width, int $height): self
+    {
+        $this->validator->setDimensionConstraints([
+            'exact_width'  => $width,
+            'exact_height' => $height,
+        ]);
+        return $this;
+    }
+
+    public function exactDimension(int $width, int $height): self
+    {
+        return $this->dimension($width, $height);
+    }
+
+    public function aspectRatio(float|string $ratio, float $tolerance = 0.05): self
+    {
+        $this->validator->setDimensionConstraints([
+            'ratio'           => $ratio,
+            'ratio_tolerance' => $tolerance,
+        ]);
+        return $this;
+    }
+
     public function sanitizeSvg(bool $sanitize = true): self
     {
         $this->validator->setSanitizeSvg($sanitize);
@@ -402,6 +425,12 @@ class UploadBuilder
     public function sharpen(): self
     {
         $this->pipeline->addAction(new FilterAction('sharpen'));
+        return $this;
+    }
+
+    public function invert(): self
+    {
+        $this->pipeline->addAction(new FilterAction('negative'));
         return $this;
     }
 

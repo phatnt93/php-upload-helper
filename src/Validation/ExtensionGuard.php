@@ -46,8 +46,16 @@ class ExtensionGuard
      * @throws ValidationException
      * @throws SecurityException
      */
-    public static function assertAllowed(string $filename, array $whitelist): void
+    public static function assertAllowed(mixed $filename, array $whitelist): void
     {
+        if (!is_string($filename) || $filename === '') {
+            throw ValidationException::forCode('ERR_EXTENSION_NOT_ALLOWED', [
+                'filename' => is_string($filename) ? $filename : get_debug_type($filename),
+                'extension' => '',
+                'allowed' => $whitelist,
+            ]);
+        }
+
         // 1. Kiểm tra null-byte injection trong toàn bộ tên file
         if (str_contains($filename, "\0") || str_contains($filename, '%00')) {
             throw SecurityException::forCode('ERR_SECURITY_NULL_BYTE', ['filename' => $filename]);

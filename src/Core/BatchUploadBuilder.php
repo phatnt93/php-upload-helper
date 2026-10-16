@@ -149,6 +149,25 @@ class BatchUploadBuilder
         return $this;
     }
 
+    public function dimension(int $width, int $height): self
+    {
+        $this->dimensionConstraints['exact_width'] = $width;
+        $this->dimensionConstraints['exact_height'] = $height;
+        return $this;
+    }
+
+    public function exactDimension(int $width, int $height): self
+    {
+        return $this->dimension($width, $height);
+    }
+
+    public function aspectRatio(float|string $ratio, float $tolerance = 0.05): self
+    {
+        $this->dimensionConstraints['ratio'] = $ratio;
+        $this->dimensionConstraints['ratio_tolerance'] = $tolerance;
+        return $this;
+    }
+
     public function maxPixels(int $maxPixels): self
     {
         $this->maxPixels = $maxPixels;
@@ -254,11 +273,16 @@ class BatchUploadBuilder
         return $this;
     }
 
-    public function saveTo(string $destinationDir, int $chmod = 0755): self
+    public function destination(string $destinationDir, int $chmod = 0755): self
     {
         $this->destinationDir = $destinationDir;
         $this->chmod = $chmod;
         return $this;
+    }
+
+    public function saveTo(string $destinationDir, int $chmod = 0755): self
+    {
+        return $this->destination($destinationDir, $chmod);
     }
 
     // --- Image Actions Chung ---
@@ -327,6 +351,12 @@ class BatchUploadBuilder
     public function grayscale(): self
     {
         $this->imageActions[] = ['type' => 'filter', 'args' => ['filter' => 'grayscale']];
+        return $this;
+    }
+
+    public function invert(): self
+    {
+        $this->imageActions[] = ['type' => 'filter', 'args' => ['filter' => 'negative']];
         return $this;
     }
 
@@ -408,12 +438,23 @@ class BatchUploadBuilder
                 $builder->minSize($this->minSize);
             }
             if (!empty($this->dimensionConstraints)) {
-                $builder->dimensionBetween(
-                    $this->dimensionConstraints['min_width'] ?? null,
-                    $this->dimensionConstraints['min_height'] ?? null,
-                    $this->dimensionConstraints['max_width'] ?? null,
-                    $this->dimensionConstraints['max_height'] ?? null,
-                );
+                if (isset($this->dimensionConstraints['exact_width'], $this->dimensionConstraints['exact_height'])) {
+                    $builder->dimension($this->dimensionConstraints['exact_width'], $this->dimensionConstraints['exact_height']);
+                }
+                if (isset($this->dimensionConstraints['min_width']) || isset($this->dimensionConstraints['max_width']) || isset($this->dimensionConstraints['min_height']) || isset($this->dimensionConstraints['max_height'])) {
+                    $builder->dimensionBetween(
+                        $this->dimensionConstraints['min_width'] ?? null,
+                        $this->dimensionConstraints['min_height'] ?? null,
+                        $this->dimensionConstraints['max_width'] ?? null,
+                        $this->dimensionConstraints['max_height'] ?? null,
+                    );
+                }
+                if (isset($this->dimensionConstraints['ratio'])) {
+                    $builder->aspectRatio(
+                        $this->dimensionConstraints['ratio'],
+                        $this->dimensionConstraints['ratio_tolerance'] ?? 0.05,
+                    );
+                }
             }
             if ($this->maxPixels !== null) {
                 $builder->maxPixels($this->maxPixels);

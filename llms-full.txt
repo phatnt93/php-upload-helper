@@ -127,13 +127,12 @@ class Upload
   Plugs in custom storage implementation (defaults to `LocalStorage`).
 
 ### 3.4 Image Manipulation
-- `resize(int $width, int $height, string $mode = 'contain', bool $allowEnlarge = false): self`  
+- `resize(int $width, int $height, string $mode = 'fit', bool $allowEnlarge = false, string $background = '#FFFFFF'): self`  
   Modes:
-  - `'contain'`: Scales proportionally so image fits within bounding box without cropping.
-  - `'cover'`: Scales and center-crops so image completely covers target dimensions.
-  - `'fill'`: Forces exact dimensions without preserving aspect ratio (stretches).
-  - `'pad'`: Scales proportionally and pads borders with background color.
-  - `'crop'`: Alias for `'cover'`.
+  - `'fit'` / `'contain'`: Scales proportionally to fit within bounding box without cropping.
+  - `'crop'` / `'cover'`: Scales and center-crops so image completely covers target dimensions.
+  - `'pad'` / `'fill'`: Scales proportionally and pads borders with background color.
+  - `'stretch'`: Forces exact dimensions without preserving aspect ratio.
 - `crop(int $width, int $height, ?int $x = null, ?int $y = null, string $position = 'center'): self`  
   Positions: `'center'`, `'top-left'`, `'top'`, `'top-right'`, `'bottom-left'`, `'bottom'`, `'bottom-right'`.
 - `rotate(float $angle, int $bgColor = 0): self`  
@@ -160,8 +159,6 @@ class Upload
 - `blur(int $passes = 1): self`
 - `sharpen(): self`
 - `invert(): self`
-- `sepia(): self`
-- `pixelate(int $blockSize = 10): self`
 
 ### 3.6 Variants & Lifecycle Hooks
 - `variant(string $name, callable(UploadBuilder): void $configurator): self`  

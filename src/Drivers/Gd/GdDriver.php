@@ -86,6 +86,7 @@ class GdDriver implements ImageDriverInterface
 
         switch ($mode) {
             case 'fit':
+            case 'contain':
                 // Giữ tỷ lệ khung hình chuẩn
                 $ratioW = $targetWidth / $srcW;
                 $ratioH = $targetHeight / $srcH;
@@ -102,6 +103,7 @@ class GdDriver implements ImageDriverInterface
                 break;
 
             case 'crop':
+            case 'cover':
                 // Cắt từ tâm để lấp đầy khung targetWidth x targetHeight
                 $ratioW = $targetWidth / $srcW;
                 $ratioH = $targetHeight / $srcH;

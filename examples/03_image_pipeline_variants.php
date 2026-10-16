@@ -11,10 +11,12 @@ $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'uh_ex3_' . bin2hex(random_
 $destDir = $tmpDir . DIRECTORY_SEPARATOR . 'variants';
 @mkdir($destDir, 0755, true);
 
+$exitCode = 0;
+
 try {
-    // 1. Create a 400x400 sample image
+    // 1. Create a 400x300 sample image (non-square to test aspect ratio preserving)
     $sampleImage = $tmpDir . DIRECTORY_SEPARATOR . 'original_banner.png';
-    $im = imagecreatetruecolor(400, 400);
+    $im = imagecreatetruecolor(400, 300);
     if ($im !== false) {
         $color = imagecolorallocate($im, 40, 160, 120);
         if ($color !== false) {
@@ -57,40 +59,47 @@ try {
 
     if (!$result->isSuccess()) {
         fwrite(STDERR, "Example 03 failed: " . $result->getErrorMessage() . PHP_EOL);
-        exit(1);
+        $exitCode = 1;
+    } else {
+        $mainFile = $result->getFile();
+        $thumbFile = $result->getVariant('thumb');
+        $mediumFile = $result->getVariant('medium');
+
+        if ($mainFile === null || $thumbFile === null || $mediumFile === null || !$recordedSuccess) {
+            fwrite(STDERR, "Example 03: Variant missing or hook not called" . PHP_EOL);
+            $exitCode = 1;
+        } else {
+            echo "[OK] Example 03 (Variants & Pipeline): Created main image '{$mainFile->getFilename()}', "
+                . "thumb '{$thumbFile->getFilename()}' (" . $thumbFile->getWidth() . "x" . $thumbFile->getHeight() . "), "
+                . "and medium '{$mediumFile->getFilename()}' (" . $mediumFile->getWidth() . "x" . $mediumFile->getHeight() . ")." . PHP_EOL;
+        }
     }
-
-    $mainFile = $result->getFile();
-    $thumbFile = $result->getVariant('thumb');
-    $mediumFile = $result->getVariant('medium');
-
-    if ($mainFile === null || $thumbFile === null || $mediumFile === null || !$recordedSuccess) {
-        fwrite(STDERR, "Example 03: Variant missing or hook not called" . PHP_EOL);
-        exit(1);
-    }
-
-    echo "[OK] Example 03 (Variants & Pipeline): Created main image '{$mainFile->getFilename()}', "
-        . "thumb '{$thumbFile->getFilename()}' (" . $thumbFile->getWidth() . "x" . $thumbFile->getHeight() . "), "
-        . "and medium '{$mediumFile->getFilename()}'." . PHP_EOL;
-
-    exit(0);
+} catch (\Throwable $e) {
+    fwrite(STDERR, "Example 03 uncaught exception: " . $e->getMessage() . PHP_EOL);
+    $exitCode = 1;
 } finally {
-    $files = glob($tmpDir . '/*');
-    if ($files !== false) {
-        foreach ($files as $f) {
-            if (is_file($f)) {
-                @unlink($f);
+    $cleanDir = static function (string $dir) use (&$cleanDir): void {
+        if (!is_dir($dir)) {
+            return;
+        }
+        $items = scandir($dir);
+        if ($items === false) {
+            return;
+        }
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                $cleanDir($path);
+            } else {
+                @unlink($path);
             }
         }
-    }
-    $uploads = glob($destDir . '/*');
-    if ($uploads !== false) {
-        foreach ($uploads as $f) {
-            if (is_file($f)) {
-                @unlink($f);
-            }
-        }
-    }
-    @rmdir($destDir);
-    @rmdir($tmpDir);
+        @rmdir($dir);
+    };
+    $cleanDir($tmpDir);
 }
+
+exit($exitCode);

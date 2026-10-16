@@ -12,7 +12,7 @@ class SizeValidator
     /**
      * Chuyển đổi chuỗi kích thước ('5M', '500K', '1G') sang số bytes
      */
-    public static function parseToBytes(int|string|null $size): ?int
+    public static function parseToBytes(mixed $size): ?int
     {
         if ($size === null || $size === '') {
             return null;
@@ -22,6 +22,9 @@ class SizeValidator
             return $size;
         }
 
+        if (!is_string($size)) {
+            return null;
+        }
         $size = trim($size);
         $unit = strtoupper(substr($size, -1));
         $value = (float) substr($size, 0, -1);

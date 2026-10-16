@@ -10,6 +10,7 @@ use UploadHelper\Core\UploadedFile;
 use UploadHelper\Exceptions\InvalidLocaleException;
 use UploadHelper\Exceptions\SecurityException;
 use UploadHelper\Exceptions\UploadException;
+use UploadHelper\Exceptions\ValidationException;
 use UploadHelper\I18n\Translator;
 use UploadHelper\Tests\TestCase;
 use UploadHelper\Upload;
@@ -275,6 +276,91 @@ class RegexNewlineAndTypeSafetyTest extends TestCase
         $file = new UploadedFile('widescreen.jpg', 'image/jpeg', filesize($tmp), $tmp);
 
         DimensionValidator::validate($file, ['ratio' => '16:9', 'ratio_tolerance' => 0.05]);
+        $this->assertTrue(true);
+    }
+
+    public function testUniversalTypeSafetyMatrix(): void
+    {
+        $nonStringInputs = [
+            'array'   => ['some', 'data'],
+            'object'  => new \stdClass(),
+            'null'    => null,
+            'integer' => 12345,
+            'float'   => 3.14,
+            'bool'    => false,
+        ];
+
+        foreach ($nonStringInputs as $type => $input) {
+            // 1. Upload::fromBase64
+            try {
+                Upload::fromBase64($input);
+                $this->fail("Expected UploadException for fromBase64({$type})");
+            } catch (UploadException $e) {
+                $this->assertStringContainsString('Base64 payload is invalid', $e->getMessage());
+            } catch (\TypeError $e) {
+                $this->fail("fromBase64({$type}) threw TypeError instead of UploadException: " . $e->getMessage());
+            }
+
+            // 2. Upload::fromPath
+            try {
+                Upload::fromPath($input);
+                $this->fail("Expected UploadException for fromPath({$type})");
+            } catch (UploadException $e) {
+                $this->assertStringContainsString('not readable', $e->getMessage());
+            } catch (\TypeError $e) {
+                $this->fail("fromPath({$type}) threw TypeError instead of UploadException: " . $e->getMessage());
+            }
+
+            // 3. Upload::fromUrl
+            try {
+                Upload::fromUrl($input);
+                $this->fail("Expected SecurityException for fromUrl({$type})");
+            } catch (SecurityException $e) {
+                $this->assertStringContainsString('invalid', $e->getMessage());
+            } catch (\TypeError $e) {
+                $this->fail("fromUrl({$type}) threw TypeError instead of SecurityException: " . $e->getMessage());
+            }
+
+            // 4. SizeValidator::parseToBytes
+            try {
+                $bytes = SizeValidator::parseToBytes($input);
+                $this->assertTrue($bytes === null || is_int($bytes));
+            } catch (\TypeError $e) {
+                $this->fail("SizeValidator::parseToBytes({$type}) threw TypeError: " . $e->getMessage());
+            }
+
+            // 5. ExtensionGuard::assertAllowed
+            try {
+                ExtensionGuard::assertAllowed($input, ['jpg']);
+                $this->fail("Expected ValidationException for assertAllowed({$type})");
+            } catch (ValidationException $e) {
+                $this->assertTrue(true);
+            } catch (\TypeError $e) {
+                $this->fail("ExtensionGuard::assertAllowed({$type}) threw TypeError: " . $e->getMessage());
+            }
+        }
+    }
+
+    #[RequiresPhpExtension('gd')]
+    public function testDimensionValidatorHandlesWrongTypeConstraintValuesGracefully(): void
+    {
+        $tmp = $this->createTestImage(100, 100, 'jpg');
+        $file = new UploadedFile('photo.jpg', 'image/jpeg', filesize($tmp), $tmp);
+
+        $badValues = [[], new \stdClass(), null, 'not_a_number'];
+
+        foreach ($badValues as $bad) {
+            // Neither ratio nor width/height constraints should throw TypeError
+            DimensionValidator::validate($file, ['ratio' => $bad]);
+            DimensionValidator::validate($file, ['min_width' => $bad]);
+            DimensionValidator::validate($file, ['max_width' => $bad]);
+            DimensionValidator::validate($file, ['exact_width' => $bad]);
+            DimensionValidator::validate($file, ['min_height' => $bad]);
+            DimensionValidator::validate($file, ['max_height' => $bad]);
+            DimensionValidator::validate($file, ['exact_height' => $bad]);
+            DimensionValidator::validate($file, ['ratio_tolerance' => $bad]);
+        }
+
         $this->assertTrue(true);
     }
 }

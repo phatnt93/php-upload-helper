@@ -53,10 +53,11 @@ class Upload
     /**
      * Tạo đối tượng upload từ một tệp tin cục bộ có sẵn trên máy chủ
      */
-    public static function fromPath(string $localFilePath, ?string $filename = null): UploadBuilder
+    public static function fromPath(mixed $localFilePath, ?string $filename = null): UploadBuilder
     {
-        if (!file_exists($localFilePath) || !is_readable($localFilePath)) {
-            throw UploadException::fileNotReadable($localFilePath);
+        if (!is_string($localFilePath) || $localFilePath === '' || !file_exists($localFilePath) || !is_readable($localFilePath)) {
+            $pathStr = is_string($localFilePath) ? $localFilePath : get_debug_type($localFilePath);
+            throw UploadException::fileNotReadable($pathStr);
         }
 
         $cleanName = $filename ?? basename($localFilePath);
@@ -88,8 +89,11 @@ class Upload
     /**
      * Tạo đối tượng upload từ chuỗi Base64 Data URI (ví dụ: 'data:image/png;base64,iVBORw...')
      */
-    public static function fromBase64(string $base64String, ?string $filename = null): UploadBuilder
+    public static function fromBase64(mixed $base64String, ?string $filename = null): UploadBuilder
     {
+        if (!is_string($base64String) || $base64String === '') {
+            throw UploadException::invalidBase64();
+        }
         $pattern = '/^data:([a-zA-Z0-9_.\/-]+);base64,(.*)\z/s';
         $mime = 'application/octet-stream';
         $encodedData = $base64String;
@@ -135,15 +139,15 @@ class Upload
      * Mọi bước redirect đều được kiểm tra lại bằng SsrfGuard và kết nối được ghim vào IP đã kiểm tra.
      */
     public static function fromUrl(
-        string $url,
+        mixed $url,
         ?string $filename = null,
         int $timeout = 15,
         int $maxDownloadBytes = 52_428_800,
         bool $allowPrivateIp = false,
         int $maxRedirects = UrlDownloader::DEFAULT_MAX_REDIRECTS,
     ): UploadBuilder {
-        if (filter_var($url, FILTER_VALIDATE_URL) === false) {
-            throw SecurityException::forCode('ERR_SSRF_INVALID_URL', ['url' => $url]);
+        if (!is_string($url) || $url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            throw SecurityException::forCode('ERR_SSRF_INVALID_URL', ['url' => is_string($url) ? $url : get_debug_type($url)]);
         }
 
         $urlPath = parse_url($url, PHP_URL_PATH);

@@ -10,6 +10,8 @@ $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'uh_ex2_' . bin2hex(random_
 $destDir = $tmpDir . DIRECTORY_SEPARATOR . 'gallery';
 @mkdir($destDir, 0755, true);
 
+$exitCode = 0;
+
 try {
     // 1. Create two sample PNG images
     $sample1 = $tmpDir . DIRECTORY_SEPARATOR . 'photo_a.png';
@@ -43,38 +45,45 @@ try {
         ->rollbackOnError(true)
         ->each(function ($builder): void {
             $builder->uuidName()
-                ->resize(80, 80)
+                ->resize(80, 80, 'cover')
                 ->toWebp();
         })
-        ->saveTo($destDir)
+        ->destination($destDir)
         ->process();
 
     if (!$batchResult->allSuccessful()) {
         fwrite(STDERR, "Example 02 batch had failures: " . count($batchResult->getFailed()) . PHP_EOL);
-        exit(1);
+        $exitCode = 1;
+    } else {
+        $count = count($batchResult->getSuccessful());
+        echo "[OK] Example 02 (Multi-File Batch): Successfully uploaded {$count} files with UUID renaming & rollback protection." . PHP_EOL;
     }
-
-    $count = count($batchResult->getSuccessful());
-    echo "[OK] Example 02 (Multi-File Batch): Successfully uploaded {$count} files with UUID renaming & rollback protection." . PHP_EOL;
-
-    exit(0);
+} catch (\Throwable $e) {
+    fwrite(STDERR, "Example 02 uncaught exception: " . $e->getMessage() . PHP_EOL);
+    $exitCode = 1;
 } finally {
-    $files = glob($tmpDir . '/*');
-    if ($files !== false) {
-        foreach ($files as $f) {
-            if (is_file($f)) {
-                @unlink($f);
+    $cleanDir = static function (string $dir) use (&$cleanDir): void {
+        if (!is_dir($dir)) {
+            return;
+        }
+        $items = scandir($dir);
+        if ($items === false) {
+            return;
+        }
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                $cleanDir($path);
+            } else {
+                @unlink($path);
             }
         }
-    }
-    $uploads = glob($destDir . '/*');
-    if ($uploads !== false) {
-        foreach ($uploads as $f) {
-            if (is_file($f)) {
-                @unlink($f);
-            }
-        }
-    }
-    @rmdir($destDir);
-    @rmdir($tmpDir);
+        @rmdir($dir);
+    };
+    $cleanDir($tmpDir);
 }
+
+exit($exitCode);

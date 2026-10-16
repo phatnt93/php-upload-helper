@@ -10,6 +10,8 @@ $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'uh_ex1_' . bin2hex(random_
 $destDir = $tmpDir . DIRECTORY_SEPARATOR . 'uploads';
 @mkdir($destDir, 0755, true);
 
+$exitCode = 0;
+
 try {
     // 1. Create a dummy PNG image to simulate an uploaded file
     $sampleImage = $tmpDir . DIRECTORY_SEPARATOR . 'sample_avatar.png';
@@ -45,32 +47,39 @@ try {
 
     if (!$result->isSuccess()) {
         fwrite(STDERR, "Example 01 failed: " . $result->getErrorMessage() . PHP_EOL);
-        exit(1);
+        $exitCode = 1;
+    } else {
+        $processed = $result->getFile();
+        echo "[OK] Example 01 (Quick Start): Successfully processed '{$processed?->getFilename()}' ("
+            . $processed?->getFormattedSize() . ") -> " . $processed?->getSavedPath() . PHP_EOL;
     }
-
-    $processed = $result->getFile();
-    echo "[OK] Example 01 (Quick Start): Successfully processed '{$processed?->getFilename()}' ("
-        . $processed?->getFormattedSize() . ") -> " . $processed?->getSavedPath() . PHP_EOL;
-
-    exit(0);
+} catch (\Throwable $e) {
+    fwrite(STDERR, "Example 01 uncaught exception: " . $e->getMessage() . PHP_EOL);
+    $exitCode = 1;
 } finally {
-    // Clean up temporary files
-    $files = glob($tmpDir . '/*');
-    if ($files !== false) {
-        foreach ($files as $f) {
-            if (is_file($f)) {
-                @unlink($f);
+    // Clean up temporary tree completely
+    $cleanDir = static function (string $dir) use (&$cleanDir): void {
+        if (!is_dir($dir)) {
+            return;
+        }
+        $items = scandir($dir);
+        if ($items === false) {
+            return;
+        }
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                $cleanDir($path);
+            } else {
+                @unlink($path);
             }
         }
-    }
-    $uploads = glob($destDir . '/*');
-    if ($uploads !== false) {
-        foreach ($uploads as $f) {
-            if (is_file($f)) {
-                @unlink($f);
-            }
-        }
-    }
-    @rmdir($destDir);
-    @rmdir($tmpDir);
+        @rmdir($dir);
+    };
+    $cleanDir($tmpDir);
 }
+
+exit($exitCode);
