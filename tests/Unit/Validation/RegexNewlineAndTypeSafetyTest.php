@@ -328,7 +328,6 @@ class RegexNewlineAndTypeSafetyTest extends TestCase
             } catch (\TypeError $e) {
                 $this->fail("SizeValidator::parseToBytes({$type}) threw TypeError: " . $e->getMessage());
             }
-
             // 5. ExtensionGuard::assertAllowed
             try {
                 ExtensionGuard::assertAllowed($input, ['jpg']);
@@ -337,6 +336,28 @@ class RegexNewlineAndTypeSafetyTest extends TestCase
                 $this->assertTrue(true);
             } catch (\TypeError $e) {
                 $this->fail("ExtensionGuard::assertAllowed({$type}) threw TypeError: " . $e->getMessage());
+            }
+
+            // 6. Upload::fromPsr7
+            try {
+                $psrResult = Upload::fromPsr7($input);
+                $this->assertInstanceOf(\UploadHelper\Core\BatchUploadBuilder::class, $psrResult);
+            } catch (UploadException $e) {
+                $this->assertStringContainsString('Input is not a PSR-7', $e->getMessage());
+            } catch (\TypeError $e) {
+                $this->fail("fromPsr7({$type}) threw TypeError instead of UploadException: " . $e->getMessage());
+            }
+
+            // 7. Upload::file and Upload::files
+            try {
+                $singleResult = Upload::file($input)->process();
+                $this->assertFalse($singleResult->isSuccess());
+                $this->assertSame('ERR_NO_FILE', $singleResult->getErrorCode());
+
+                $batchResult = Upload::files($input)->process();
+                $this->assertSame(0, $batchResult->count());
+            } catch (\TypeError $e) {
+                $this->fail("Upload::file/files({$type}) threw TypeError: " . $e->getMessage());
             }
         }
     }

@@ -181,9 +181,9 @@ class Upload
     /**
      * Tích hợp với PSR-7 UploadedFileInterface
      *
-     * @param object|array<mixed> $psr7Input
+     * @param mixed $psr7Input
      */
-    public static function fromPsr7(object|array $psr7Input): UploadBuilder|BatchUploadBuilder
+    public static function fromPsr7(mixed $psr7Input): UploadBuilder|BatchUploadBuilder
     {
         if (is_array($psr7Input)) {
             $files = [];
@@ -195,7 +195,7 @@ class Upload
             return new BatchUploadBuilder(new FileCollection($files));
         }
 
-        if (method_exists($psr7Input, 'getClientFilename')) {
+        if (is_object($psr7Input) && method_exists($psr7Input, 'getClientFilename')) {
             return new UploadBuilder(self::convertPsr7ToUploadedFile($psr7Input));
         }
 
