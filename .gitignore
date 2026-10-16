@@ -1,0 +1,7 @@
+/vendor/
+/.phpunit.cache/
+/.php-cs-fixer.cache
+/coverage/
+.DS_Store
+Thumbs.db
+/composer.lock
