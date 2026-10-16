@@ -66,7 +66,7 @@ class SecurityValidator implements ValidatorInterface
      */
     public function setDimensionConstraints(array $constraints): self
     {
-        $this->dimensionConstraints = $constraints;
+        $this->dimensionConstraints = array_replace($this->dimensionConstraints, $constraints);
         return $this;
     }
 

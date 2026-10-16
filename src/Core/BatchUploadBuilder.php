@@ -140,12 +140,12 @@ class BatchUploadBuilder
         ?int $maxW = null,
         ?int $maxH = null,
     ): self {
-        $this->dimensionConstraints = [
+        $this->dimensionConstraints = array_replace($this->dimensionConstraints, [
             'min_width'  => $minW,
             'min_height' => $minH,
             'max_width'  => $maxW,
             'max_height' => $maxH,
-        ];
+        ]);
         return $this;
     }
 

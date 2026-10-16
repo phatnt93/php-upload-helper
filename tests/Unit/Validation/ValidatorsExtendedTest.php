@@ -314,7 +314,10 @@ final class ValidatorsExtendedTest extends TestCase
         yield 'unique local v6' => ['fd00::1', true];
         yield 'link local v6' => ['fe80::1', true];
         yield 'mapped loopback' => ['::ffff:127.0.0.1', true];
-        yield 'mapped public' => ['::ffff:93.184.216.34', false];
+        yield 'mapped public is reserved' => ['::ffff:93.184.216.34', true];
+        yield 'mapped public hex' => ['::ffff:5db8:d822', true];
+        yield 'mapped public expanded' => ['0:0:0:0:0:ffff:5db8:d822', true];
+        yield 'mapped metadata' => ['::ffff:169.254.169.254', true];
         yield 'not an ip' => ['not-an-ip', true];
     }
 
@@ -335,6 +338,8 @@ final class ValidatorsExtendedTest extends TestCase
         yield 'port' => ['http://example.com:22/a.jpg', 'ERR_SSRF_DISALLOWED_PORT'];
         yield 'localhost' => ['http://localhost/a.jpg', 'ERR_SSRF_BLOCKED'];
         yield 'ipv6 loopback' => ['http://[::1]/a.jpg', 'ERR_SSRF_BLOCKED'];
+        yield 'mapped public' => ['http://[::ffff:93.184.216.34]/a.jpg', 'ERR_SSRF_BLOCKED'];
+        yield 'mapped metadata' => ['http://[::ffff:a9fe:a9fe]/a.jpg', 'ERR_SSRF_BLOCKED'];
     }
 
     #[DataProvider('unsafeUrlProvider')]

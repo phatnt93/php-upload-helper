@@ -185,12 +185,10 @@ class SsrfGuard
             if (str_starts_with($hex, 'fe8') || str_starts_with($hex, 'fe9') || str_starts_with($hex, 'fea') || str_starts_with($hex, 'feb')) {
                 return true;
             }
-            // IPv4-mapped IPv6 (::ffff:127.0.0.1)
+            // Block the mapped range consistently across PHP filter versions.
+            // Use a plain public IPv4 address instead of an IPv4-mapped IPv6 literal.
             if (str_starts_with($hex, '00000000000000000000ffff')) {
-                $v4Hex = substr($hex, 24);
-                $v4Long = hexdec($v4Hex);
-                $v4Ip = long2ip((int) $v4Long);
-                return $v4Ip === false || self::isPrivateOrReservedIp($v4Ip);
+                return true;
             }
         }
 
